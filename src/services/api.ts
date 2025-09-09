@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = process.env.BACKEND_URL || "https://bingo-backend.railway.internal";
+const API_BASE = process.env.BACKEND_URL || "https://bingo-backend-production-32e1.up.railway.app";
 
 export const api = {
   registerUser: async (data: any) => axios.post(`${API_BASE}/users`, data),
