@@ -1,20 +1,22 @@
-import { Telegraf, Markup } from "telegraf";
+import { Telegraf, Markup, Context } from "telegraf";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
-export default (bot: Telegraf<any>) => {
+export default (bot: Telegraf<Context>) => {
+  // /start handler
   bot.start(async (ctx) => {
     const telegramId = ctx.from?.id;
     const username = ctx.from?.username || "Player";
+
+    if (!telegramId) {
+      return ctx.reply("❌ Cannot identify you. Please try again.");
+    }
 
     try {
       // Check if user exists
       const exists = await api.checkUser(telegramId);
       if (exists) {
-        await ctx.reply(
-          `👋 Welcome back ${username}!`,
-          mainMenuKeyboard()
-        );
+        await ctx.reply(`👋 Welcome back ${username}!`, mainMenuKeyboard());
         return;
       }
 
@@ -37,15 +39,15 @@ export default (bot: Telegraf<any>) => {
   bot.on("contact", async (ctx) => {
     const telegramId = ctx.from?.id;
     const username = ctx.from?.username || "Player";
-    const phone = ctx.message.contact.phone_number;
+    const phone = ctx.message?.contact?.phone_number;
+
+    if (!telegramId || !phone) {
+      return ctx.reply("❌ Could not get your phone number. Please try again.");
+    }
 
     try {
       await api.registerUser({ telegramId, username, phone });
-
-      await ctx.reply(
-        `✅ Registered successfully!\n👋 Welcome ${username}`,
-        mainMenuKeyboard()
-      );
+      await ctx.reply(`✅ Registered successfully!\n👋 Welcome ${username}`, mainMenuKeyboard());
     } catch (err) {
       console.error("❌ Registration error:", err);
       await ctx.reply("❌ Failed to register. Try again later.");
