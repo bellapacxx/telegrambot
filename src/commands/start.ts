@@ -3,7 +3,6 @@ import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
 export default (bot: Telegraf<Context>) => {
-  // /start handler
   bot.start(async (ctx) => {
     const telegramId = ctx.from?.id;
     const username = ctx.from?.username || "Player";
@@ -13,22 +12,21 @@ export default (bot: Telegraf<Context>) => {
     }
 
     try {
-      // Check if user exists
       const exists = await api.checkUser(telegramId);
-      if (exists) {
-        await ctx.reply(`👋 Welcome back ${username}!`, mainMenuKeyboard());
+
+      if (!exists) {
+        // ask for phone number if new
+        await ctx.reply(
+          "📱 Please share your phone number to complete registration:",
+          Markup.keyboard([Markup.button.contactRequest("📲 Share Phone Number")])
+            .resize()
+            .oneTime()
+        );
         return;
       }
 
-      // Ask for phone number
-      await ctx.reply(
-        "📱 Please share your phone number to complete registration:",
-        Markup.keyboard([
-          Markup.button.contactRequest("📲 Share Phone Number")
-        ])
-          .resize()
-          .oneTime()
-      );
+      // user exists, show menu
+      await ctx.reply(`👋 Welcome back ${username}!`, mainMenuKeyboard());
     } catch (err) {
       console.error("❌ Error checking user:", err);
       await ctx.reply("❌ Registration failed. Try again later.");
@@ -46,8 +44,24 @@ export default (bot: Telegraf<Context>) => {
     }
 
     try {
-      await api.registerUser({ telegramId, username, phone });
-      await ctx.reply(`✅ Registered successfully!\n👋 Welcome ${username}`, mainMenuKeyboard());
+      // Attempt to register user
+      const userExists = await api.checkUser(telegramId);
+
+      if (!userExists) {
+        await api.registerUser({
+          telegram_id: telegramId,
+          username,
+          phone,
+        });
+      } else {
+        // update phone if user exists
+        await api.updatePhone(telegramId, phone);
+      }
+
+      await ctx.reply(
+        `✅ Registration complete!\n👋 Welcome ${username}`,
+        mainMenuKeyboard()
+      );
     } catch (err) {
       console.error("❌ Registration error:", err);
       await ctx.reply("❌ Failed to register. Try again later.");
