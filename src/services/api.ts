@@ -18,7 +18,7 @@ export const api = {
   },
 
   // Register a new user
-  async registerUser(user: { telegram_id: number; username: string; phone: string }) {
+  async registerUser(user: { telegram_id: number; "username": string; phone: string }) {
     const res = await axios.post(`${API_BASE}/users`, user);
     return res.data;
   },
