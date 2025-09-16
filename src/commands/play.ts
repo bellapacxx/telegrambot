@@ -1,4 +1,4 @@
-import { Telegraf, Markup, Context } from "telegraf";
+import { Telegraf, Markup, Context, NarrowedContext } from "telegraf";
 import { api } from "../services/api";
 
 export default (bot: Telegraf<Context>) => {
@@ -31,15 +31,14 @@ export default (bot: Telegraf<Context>) => {
   // ----------------------
   // Handle stake selection
   // ----------------------
-  bot.action(/play_\d+/, async (ctx) => {
-    if (!ctx.from) return;
+  bot.action(/play_\d+/, async (ctx: Context) => {
+    if (!ctx.from || !ctx.callbackQuery || !("data" in ctx.callbackQuery)) return;
 
     const telegramId = ctx.from.id;
-    const data = ctx.callbackQuery?.data;
-    if (!data) return;
-
+    const data = ctx.callbackQuery.data as string; // safely cast
     const stake = parseInt(data.replace("play_", ""), 10);
-    await ctx.answerCbQuery(); // remove loading
+
+    await ctx.answerCbQuery(); // remove loading indicator
 
     // Ensure user exists
     const userExists = await api.checkUser(telegramId);
@@ -56,9 +55,14 @@ export default (bot: Telegraf<Context>) => {
 
     // Respond to Telegram
     await ctx.reply(
-      `🎮 You selected ${stake} ETB.\nWatching the lobby is enabled on the backend.`,
+      `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby (backend handles the game).`,
       Markup.inlineKeyboard([
-        [Markup.button.url("Open Lobby in Browser", `https://your-frontend-lobby.com/${stake}?user=${telegramId}`)]
+        [
+          Markup.button.url(
+            "Open Lobby in Browser",
+            `https://your-frontend-lobby.com/${stake}?user=${telegramId}`
+          )
+        ]
       ])
     );
   });
