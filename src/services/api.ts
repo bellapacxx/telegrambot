@@ -28,8 +28,16 @@ export const api = {
     const res = await axios.put(`${API_BASE}/users/${telegramId}/phone`, { phone });
     return res.data;
   },
-  getUser: async (telegramId: number) =>
-    axios.get(`${API_BASE}/users/${telegramId}`).then((res) => res.data),
+ // Get user data
+  async getUser(telegramId: number) {
+    try {
+      const res = await axios.get(`${API_BASE}/users/${telegramId}`);
+      return res.data; // user object
+    } catch (err: any) {
+      if (err.response?.status === 404) return null; // user not found
+      throw err; // other errors
+    }
+  },
   deposit: async (data: any) => axios.post(`${API_BASE}/deposit`, data),
   withdraw: async (data: any) => axios.post(`${API_BASE}/withdraw`, data),
   buyTicket: async (data: any) => axios.post(`${API_BASE}/tickets`, data),
