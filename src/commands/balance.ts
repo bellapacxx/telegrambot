@@ -7,6 +7,7 @@ export default (bot: Telegraf<any>) => {
     try {
       // Ensure we have a numeric Telegram ID
       const telegramId = Number(ctx.from.id);
+      console.log("Balance command triggered by:", ctx.from.id);
       if (!telegramId) {
         await ctx.reply("⚠️ Unable to determine your Telegram ID.", mainMenuKeyboard());
         return;
