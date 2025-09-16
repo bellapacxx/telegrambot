@@ -2,15 +2,15 @@ import { Telegraf, Markup, Context } from "telegraf";
 import { api } from "../services/api";
 
 export default (bot: Telegraf<Context>) => {
+  // ----------------------
   // /play command or menu button
-  bot.command("play", async (ctx) => {
-    await showPlayOptions(ctx);
-  });
+  // ----------------------
+  bot.command("play", async (ctx) => showPlayOptions(ctx));
+  bot.hears("🎟 Play", async (ctx) => showPlayOptions(ctx));
 
-  bot.hears("🎟 Play", async (ctx) => {
-    await showPlayOptions(ctx);
-  });
-
+  // ----------------------
+  // Show stake options
+  // ----------------------
   const showPlayOptions = async (ctx: Context) => {
     await ctx.reply(
       "🎮 Choose your stake:",
@@ -28,37 +28,44 @@ export default (bot: Telegraf<Context>) => {
     );
   };
 
-  // Handle stake selection safely
+  // ----------------------
+  // Handle stake selection
+  // ----------------------
   bot.action(/play_\d+/, async (ctx) => {
-    const telegramId = ctx.from?.id;
-    if (!telegramId) return;
+    if (!ctx.from) return;
 
-    const data = ctx.callbackQuery?.chat_instance;
+    const telegramId = ctx.from.id;
+    const data = ctx.callbackQuery?.data;
     if (!data) return;
 
     const stake = parseInt(data.replace("play_", ""), 10);
-
-    await ctx.answerCbQuery();
+    await ctx.answerCbQuery(); // remove loading
 
     // Ensure user exists
     const userExists = await api.checkUser(telegramId);
     if (!userExists) {
       await api.registerUser({
         telegram_id: telegramId,
-        username: ctx.from?.username || ctx.from?.first_name || "Anonymous",
+        username: ctx.from.username || ctx.from.first_name || "Anonymous",
         phone: "",
       });
     }
 
-    // Respond with WebSocket lobby link
-    const lobbyWsUrl = `${process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws"}/${stake}?telegram_id=${telegramId}`;
+    // Connect to WebSocket lobby
+    api.connectLobby(stake, telegramId);
+
+    // Respond to Telegram
     await ctx.reply(
-      `🎮 You selected ${stake} ETB.\nConnect to the lobby to watch the game live:`,
-      Markup.inlineKeyboard([[Markup.button.url("Join Lobby", lobbyWsUrl)]])
+      `🎮 You selected ${stake} ETB.\nWatching the lobby is enabled on the backend.`,
+      Markup.inlineKeyboard([
+        [Markup.button.url("Open Lobby in Browser", `https://your-frontend-lobby.com/${stake}?user=${telegramId}`)]
+      ])
     );
   });
 
+  // ----------------------
   // Back button
+  // ----------------------
   bot.action("main_menu", async (ctx) => {
     await ctx.answerCbQuery();
     await ctx.reply(

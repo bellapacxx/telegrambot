@@ -1,12 +1,13 @@
 import axios from "axios";
+import WebSocket from "ws"; // Node WebSocket library
 
 const API_BASE = process.env.BACKEND_URL || "https://bingo-backend-production-32e1.up.railway.app/api";
-
-
-  
+const WS_BASE = process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws";
 
 export const api = {
-  // Check if user exists
+  // ----------------------
+  // User APIs
+  // ----------------------
   async checkUser(telegramId: number) {
     try {
       const res = await axios.get(`${API_BASE}/users/${telegramId}`);
@@ -17,28 +18,53 @@ export const api = {
     }
   },
 
-  // Register a new user
-  async registerUser(user: { telegram_id: number; "username": string; phone: string }) {
+  async registerUser(user: { telegram_id: number; username: string; phone: string }) {
     const res = await axios.post(`${API_BASE}/users`, user);
     return res.data;
   },
 
-  // Update phone number
   async updatePhone(telegramId: number, phone: string) {
     const res = await axios.put(`${API_BASE}/users/${telegramId}/phone`, { phone });
     return res.data;
   },
- // Get user data
+
   async getUser(telegramId: number) {
     try {
       const res = await axios.get(`${API_BASE}/users/${telegramId}`);
-      return res.data; // user object
+      return res.data;
     } catch (err: any) {
-      if (err.response?.status === 404) return null; // user not found
-      throw err; // other errors
+      if (err.response?.status === 404) return null;
+      throw err;
     }
   },
+
   deposit: async (data: any) => axios.post(`${API_BASE}/deposit`, data),
   withdraw: async (data: any) => axios.post(`${API_BASE}/withdraw`, data),
   buyTicket: async (data: any) => axios.post(`${API_BASE}/tickets`, data),
+
+  // ----------------------
+  // WebSocket lobby
+  // ----------------------
+  connectLobby: (stake: number, telegramId: number) => {
+    const wsUrl = `${WS_BASE}/${stake}?user=${telegramId}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.on("open", () => {
+      console.log(`[WS] Connected to lobby for stake ${stake}, user ${telegramId}`);
+    });
+
+    ws.on("message", (msg: { toString: () => any; }) => {
+      console.log(`[WS] Lobby message for user ${telegramId}: ${msg.toString()}`);
+    });
+
+    ws.on("close", () => {
+      console.log(`[WS] Connection closed for user ${telegramId}`);
+    });
+
+    ws.on("error", (err: any) => {
+      console.error(`[WS] Error for user ${telegramId}:`, err);
+    });
+
+    return ws;
+  },
 };
