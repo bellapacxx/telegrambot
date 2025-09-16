@@ -3,11 +3,28 @@ import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
 export default (bot: Telegraf<any>) => {
+  // ----------------------
+  // /balance command
+  // ----------------------
   bot.command("balance", async (ctx) => {
+    await handleBalance(ctx, bot);
+  });
+
+  // ----------------------
+  // 💰 Balance button
+  // ----------------------
+  bot.hears("💰 Balance", async (ctx) => {
+    await handleBalance(ctx, bot);
+  });
+
+  // ----------------------
+  // Shared handler
+  // ----------------------
+  const handleBalance = async (ctx: any, botInstance: Telegraf<any>) => {
     try {
-      // Ensure we have a numeric Telegram ID
-      const telegramId = Number(ctx.from.id);
-      console.log("Balance command triggered by:", ctx.from.id);
+      const telegramId = Number(ctx.from?.id);
+      console.log("Balance triggered by:", telegramId);
+
       if (!telegramId) {
         await ctx.reply("⚠️ Unable to determine your Telegram ID.", mainMenuKeyboard());
         return;
@@ -23,13 +40,12 @@ export default (bot: Telegraf<any>) => {
         return;
       }
 
-      // Default to 0 if balance is null/undefined
       const balance = user.balance ?? 0;
 
       await ctx.reply(`💰 Balance: ${balance} ETB`, mainMenuKeyboard());
     } catch (err) {
-      console.error("[BALANCE COMMAND ERROR]", err);
+      console.error("[BALANCE HANDLER ERROR]", err);
       await ctx.reply("❌ Unable to fetch balance. Please try again later.", mainMenuKeyboard());
     }
-  });
+  };
 };
