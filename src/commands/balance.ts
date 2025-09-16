@@ -5,7 +5,14 @@ import { api } from "../services/api";
 export default (bot: Telegraf<any>) => {
   bot.command("balance", async (ctx) => {
     try {
-      const user = await api.getUser(ctx.from.id);
+      // Ensure we have a numeric Telegram ID
+      const telegramId = Number(ctx.from.id);
+      if (!telegramId) {
+        await ctx.reply("⚠️ Unable to determine your Telegram ID.", mainMenuKeyboard());
+        return;
+      }
+
+      const user = await api.getUser(telegramId);
 
       if (!user) {
         await ctx.reply(
@@ -15,10 +22,13 @@ export default (bot: Telegraf<any>) => {
         return;
       }
 
-      await ctx.reply(`💰 Balance: ${user.balance} ETB`, mainMenuKeyboard());
+      // Default to 0 if balance is null/undefined
+      const balance = user.balance ?? 0;
+
+      await ctx.reply(`💰 Balance: ${balance} ETB`, mainMenuKeyboard());
     } catch (err) {
-      console.error(err);
-      await ctx.reply("❌ Unable to fetch balance.");
+      console.error("[BALANCE COMMAND ERROR]", err);
+      await ctx.reply("❌ Unable to fetch balance. Please try again later.", mainMenuKeyboard());
     }
   });
 };
