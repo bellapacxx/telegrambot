@@ -51,7 +51,7 @@ export default (bot: Telegraf<Context>) => {
     }
 
     // Respond with WebSocket lobby link
-    const lobbyWsUrl = `${process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws"}/${stake}?user=${telegramId}`;
+    const lobbyWsUrl = `${process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws"}/${stake}?telegram_id=${telegramId}`;
     await ctx.reply(
       `🎮 You selected ${stake} ETB.\nConnect to the lobby to watch the game live:`,
       Markup.inlineKeyboard([[Markup.button.url("Join Lobby", lobbyWsUrl)]])
