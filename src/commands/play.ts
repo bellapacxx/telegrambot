@@ -2,11 +2,7 @@ import { Telegraf, Markup, Context, NarrowedContext } from "telegraf";
 import { api } from "../services/api";
 
 export default (bot: Telegraf<Context>) => {
-  // ----------------------
-  // /play command or menu button
-  // ----------------------
-  bot.command("play", async (ctx) => showPlayOptions(ctx));
-  bot.hears("play", async (ctx) => showPlayOptions(ctx));
+  
 
   // ----------------------
   // Show stake options
@@ -27,6 +23,12 @@ export default (bot: Telegraf<Context>) => {
       ])
     );
   };
+
+  // ----------------------
+  // /play command or menu button
+  // ----------------------
+  bot.command("play", async (ctx) => showPlayOptions(ctx));
+  bot.hears("play", async (ctx) => showPlayOptions(ctx));
 
   // ----------------------
   // Handle stake selection
