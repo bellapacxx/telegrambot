@@ -6,7 +6,7 @@ export default (bot: Telegraf<Context>) => {
   // /play command or menu button
   // ----------------------
   bot.command("play", async (ctx) => showPlayOptions(ctx));
-  bot.hears("🎟 Play", async (ctx) => showPlayOptions(ctx));
+  bot.hears("play", async (ctx) => showPlayOptions(ctx));
 
   // ----------------------
   // Show stake options

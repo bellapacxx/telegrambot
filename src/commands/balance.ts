@@ -1,26 +1,12 @@
-import { Telegraf } from "telegraf";
+import { Telegraf, Context } from "telegraf";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
-export default (bot: Telegraf<any>) => {
+export default (bot: Telegraf<Context>) => {
   // ----------------------
-  // /balance command
+  // Shared balance handler
   // ----------------------
-  bot.command("balance", async (ctx) => {
-    await handleBalance(ctx, bot);
-  });
-
-  // ----------------------
-  // 💰 Balance button
-  // ----------------------
-  bot.hears("💰 Balance", async (ctx) => {
-    await handleBalance(ctx, bot);
-  });
-
-  // ----------------------
-  // Shared handler
-  // ----------------------
-  const handleBalance = async (ctx: any, botInstance: Telegraf<any>) => {
+  const handleBalance = async (ctx: Context) => {
     try {
       const telegramId = Number(ctx.from?.id);
       console.log("Balance triggered by:", telegramId);
@@ -41,11 +27,24 @@ export default (bot: Telegraf<any>) => {
       }
 
       const balance = user.balance ?? 0;
-
       await ctx.reply(`💰 Balance: ${balance} ETB`, mainMenuKeyboard());
     } catch (err) {
       console.error("[BALANCE HANDLER ERROR]", err);
       await ctx.reply("❌ Unable to fetch balance. Please try again later.", mainMenuKeyboard());
     }
   };
+
+  // ----------------------
+  // /balance command
+  // ----------------------
+  bot.command("balance", handleBalance);
+
+  // ----------------------
+  // Inline button callback
+  // ----------------------
+  bot.action("balance", async (ctx) => {
+    await handleBalance(ctx);
+    // Optionally answer the callback to remove the "loading…" state
+    await ctx.answerCbQuery();
+  });
 };
