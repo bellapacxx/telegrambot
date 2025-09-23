@@ -95,3 +95,4 @@ export const playCommand = (bot: TelegramBot) => {
     }
   });
 };
+export default playCommand;

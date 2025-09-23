@@ -72,3 +72,4 @@ export const balanceCommand = (bot: TelegramBot) => {
     }
   });
 };
+export default balanceCommand;

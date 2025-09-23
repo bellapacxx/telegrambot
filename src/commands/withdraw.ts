@@ -14,3 +14,4 @@ export const withdrawCommand = (bot: TelegramBot) => {
     // Example: userData[chatId] = { state: "awaiting_withdraw_amount" };
   });
 };
+export default withdrawCommand;

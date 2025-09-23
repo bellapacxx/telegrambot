@@ -129,3 +129,4 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
     },
   });
 }
+export default depositCommand;
