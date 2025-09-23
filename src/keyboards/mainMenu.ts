@@ -1,12 +1,14 @@
-import { Markup } from "telegraf";
+import TelegramBot from "node-telegram-bot-api";
 
-export const mainMenuKeyboard = () =>
-  Markup.inlineKeyboard([
-    [Markup.button.callback("🎮 Play Bingo", "play")],
+// Return the raw InlineKeyboardMarkup object
+export const mainMenuKeyboard = (): TelegramBot.InlineKeyboardMarkup => ({
+  inline_keyboard: [
+    [{ text: "🎮 Play Bingo", callback_data: "play" }],
     [
-      Markup.button.callback("💳 Deposit", "deposit"),
-      Markup.button.callback("🏦 Withdraw", "withdraw"),
+      { text: "💳 Deposit", callback_data: "deposit" },
+      { text: "🏦 Withdraw", callback_data: "withdraw" },
     ],
-    [Markup.button.callback("📊 Balance", "balance")],
-    [Markup.button.callback("❓ Help", "help")],
-  ]);
+    [{ text: "📊 Balance", callback_data: "balance" }],
+    [{ text: "❓ Help", callback_data: "help" }],
+  ],
+});

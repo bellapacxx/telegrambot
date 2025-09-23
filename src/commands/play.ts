@@ -1,86 +1,97 @@
-import { Telegraf, Context, Markup } from "telegraf";
+import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
-export default (bot: Telegraf<Context>) => {
+export const playCommand = (bot: TelegramBot) => {
   // ----------------------
-  // Shared Play handler
+  // Show play options
   // ----------------------
-  const showPlayOptions = async (ctx: Context) => {
-    await ctx.reply(
-      "🎮 Choose your stake:",
-      // Inline keyboard for stake selection
-      Markup.inlineKeyboard([
-        [
-          Markup.button.callback("Play 10", "play_10"),
-          Markup.button.callback("Play 20", "play_20"),
+  const showPlayOptions = (chatId: number) => {
+    const options: TelegramBot.SendMessageOptions = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "Play 10", callback_data: "play_10" },
+            { text: "Play 20", callback_data: "play_20" },
+          ],
+          [
+            { text: "Play 50", callback_data: "play_50" },
+            { text: "Play 100", callback_data: "play_100" },
+          ],
+          [{ text: "⬅ Back", callback_data: "main_menu" }],
         ],
-        [
-          Markup.button.callback("Play 50", "play_50"),
-          Markup.button.callback("Play 100", "play_100"),
-        ],
-        [Markup.button.callback("⬅ Back", "main_menu")],
-      ])
-    );
+      },
+    };
+
+    return bot.sendMessage(chatId, "🎮 Choose your stake:", options);
   };
 
   // ----------------------
   // /play command
   // ----------------------
-  bot.command("play", showPlayOptions);
-
-  // ----------------------
-  // Inline button callback
-  // ----------------------
-  bot.action("play", async (ctx) => {
-    await showPlayOptions(ctx);
-    await ctx.answerCbQuery(); // remove loading animation
+  bot.onText(/\/play/, (msg: Message) => {
+    showPlayOptions(msg.chat.id);
   });
 
   // ----------------------
-  // Handle stake selection
+  // Handle button callbacks
   // ----------------------
-  bot.action(/play_\d+/, async (ctx: Context) => {
-    if (!ctx.from || !ctx.callbackQuery || !("data" in ctx.callbackQuery)) return;
+  bot.on("callback_query", async (query: CallbackQuery) => {
+    const chatId = query.message?.chat.id;
+    const telegramId = query.from?.id;
+    const data = query.data;
 
-    const telegramId = ctx.from.id;
-    const data = ctx.callbackQuery.data as string;
-    const stake = parseInt(data.replace("play_", ""), 10);
+    if (!chatId || !telegramId || !data) return;
 
-    await ctx.answerCbQuery();
-
-    // Ensure user exists
-    const userExists = await api.checkUser(telegramId);
-    if (!userExists) {
-      await api.registerUser({
-        telegram_id: telegramId,
-        username: ctx.from.username || ctx.from.first_name || "Anonymous",
-        phone: "",
+    // Back to main menu
+    if (data === "main_menu") {
+      await bot.sendMessage(chatId, "⬅ Back to main menu", {
+        reply_markup: mainMenuKeyboard(),
       });
+      return bot.answerCallbackQuery(query.id);
     }
 
-    // Connect to WebSocket lobby
-    api.connectLobby(stake, telegramId);
+    // Show stake options
+    if (data === "play") {
+      await showPlayOptions(chatId);
+      return bot.answerCallbackQuery(query.id);
+    }
 
-    // Respond to Telegram
-    await ctx.reply(
-      `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby.`,
-      Markup.inlineKeyboard([
-        [
-          Markup.button.url(
-            "Open Lobby in Browser",
-            `https://your-frontend-lobby.com/${stake}?user=${telegramId}`
-          ),
-        ],
-      ])
-    );
-  });
+    // Handle stake selection
+    if (/play_\d+/.test(data)) {
+      const stake = parseInt(data.replace("play_", ""), 10);
+      await bot.answerCallbackQuery(query.id);
 
-  // ----------------------
-  // Back to main menu button
-  // ----------------------
-  bot.action("main_menu", async (ctx) => {
-    await ctx.answerCbQuery();
-    await ctx.reply("⬅ Back to main menu", mainMenuKeyboard());
+      // Ensure user exists
+      const userExists = await api.checkUser(telegramId);
+      if (!userExists) {
+        await api.registerUser({
+          telegram_id: telegramId,
+          username: query.from.username || query.from.first_name || "Anonymous",
+          phone: "",
+        });
+      }
+
+      // Connect to WebSocket lobby
+      api.connectLobby(stake, telegramId);
+
+      // Respond to Telegram
+      await bot.sendMessage(
+        chatId,
+        `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby.`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "Open Lobby in Browser",
+                  url: `https://your-frontend-lobby.com/${stake}?user=${telegramId}`,
+                },
+              ],
+            ],
+          },
+        }
+      );
+    }
   });
 };
