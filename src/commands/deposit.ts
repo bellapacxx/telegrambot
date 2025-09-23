@@ -1,8 +1,16 @@
 import { Telegraf, Markup, Context } from "telegraf";
+import { api } from "../services/api";
 
-const userData: Record<number, { amount?: number; phone?: string; name?: string }> = {};
+interface UserState {
+  amount?: number;
+  name?: string;
+  awaitingAmount?: boolean;
+}
+
+const userData: Record<number, UserState> = {};
 
 export default (bot: Telegraf<Context>) => {
+  // Deposit command
   bot.command("deposit", async (ctx) => {
     await ctx.reply(
       "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:",
@@ -13,22 +21,17 @@ export default (bot: Telegraf<Context>) => {
     );
   });
 
+  // User chooses Manual deposit
   bot.action("deposit_momo", async (ctx) => {
-    await ctx.reply("💰 እንዲሞላልዎት የሚፈልጉትን የገንዘብ መጠን ያስገቡ:");
-    await ctx.answerCbQuery();
-  });
-
-  // Save contact if shared
-  bot.on("contact", async (ctx) => {
     const userId = ctx.from?.id;
     if (!userId) return;
 
-    userData[userId] = {
-      ...(userData[userId] || {}),
-      phone: ctx.message.contact.phone_number,
-    };
+    if (!userData[userId]) userData[userId] = {};
 
-    await ctx.reply("✅ Phone number received!");
+    userData[userId].awaitingAmount = true;
+
+    await ctx.reply("💰 እንዲሞላልዎት የሚፈልጉትን የገንዘብ መጠን ያስገቡ:");
+    await ctx.answerCbQuery();
   });
 
   // Handle amount input
@@ -38,34 +41,47 @@ export default (bot: Telegraf<Context>) => {
 
     const user = userData[userId] || {};
 
-    if (!user.amount) {
+    if (user.awaitingAmount) {
       const amount = parseFloat(ctx.message.text);
+
       if (isNaN(amount) || amount <= 0) {
         return ctx.reply("❌ ትክክለኛ ቁጥር ያስገቡ እባክዎን.");
       }
 
       user.amount = amount;
-
-      // Get user's name from Telegram
-      user.name = [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(" ") || "User";
+      user.name =
+        [ctx.from.first_name, ctx.from.last_name].filter(Boolean).join(" ") ||
+        "User";
+      user.awaitingAmount = false;
 
       userData[userId] = user;
 
-      const reference = Math.random().toString(36).substring(2, 10);
+      const reference = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      // ✅ Get phone from DB (already registered earlier)
+      let phone = "Not shared";
+      try {
+        const dbUser = await api.getUser(userId);
+        if (dbUser?.phone) phone = dbUser.phone;
+      } catch (err) {
+        console.error("❌ Failed to fetch phone:", err);
+      }
 
       await ctx.reply(
         `💳 Payment Details / የክፍያ ዝርዝር\n\n` +
           `Name:          ${user.name}\n` +
-          `Phone:         ${user.phone || "Not shared"}\n` +
+          `Phone:         ${phone}\n` +
           `Amount:        ${user.amount} ETB\n` +
           `Reference:     ${reference}\n\n` +
           `ብር ማስገባት የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:\n` +
-          `1. ከቴሌብር → ኤጀንት ቴሌብር\n2. ከንግድ ባንክ → ኤጀንት ንግድ ባንክ\n3. ከሲቢኢ ብር → ኤጀንት ሲቢኢ ብር\n4. ከአቢሲኒያ ባንክ → ኤጀንት አቢሲኒያ ባንክ`,
+          `1. ከቴሌብር → ቴሌብር\n` +
+          `2. ከንግድ ባንክ → ንግድ ባንክ\n` +
+          `3. ከሲቢኢ ብር → ኤጀንት ሲቢኢ ብር\n` +
+          `4. ከአቢሲኒያ ባንክ → ኤጀንት አቢሲኒያ ባንክ`,
         Markup.inlineKeyboard([
-          [Markup.button.callback("CBE → CBE", "pay_cbe")],
-          [Markup.button.callback("Telebirr → Telebirr", "pay_telebirr")],
-          [Markup.button.callback("Commercial Bank", "pay_commercial")],
-          [Markup.button.callback("Abyssinia Bank", "pay_abyssinia")],
+          [Markup.button.callback("💰 Telebirr → Telebirr", "pay_telebirr")],
+          [Markup.button.callback("🏦 CBE → CBE", "pay_cbe")],
+          [Markup.button.callback("⬅ Back", "main_menu")],
         ])
       );
     }
