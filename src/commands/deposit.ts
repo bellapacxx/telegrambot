@@ -2,20 +2,28 @@ import { Telegraf, Markup } from "telegraf";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 
 export default (bot: Telegraf<any>) => {
+  // /deposit command
   bot.command("deposit", async (ctx) => {
     await ctx.reply(
-      "💳 Choose deposit method:",
+      "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:",
       Markup.inlineKeyboard([
-        [Markup.button.callback("📱 Mobile Money", "deposit_momo")],
-        [Markup.button.callback("🏦 Bank Transfer", "deposit_bank")],
-        [Markup.button.callback("₿ Crypto", "deposit_crypto")],
+        [Markup.button.callback("📱 Manual", "deposit_momo")],
         [Markup.button.callback("⬅ Back", "main_menu")],
       ])
     );
   });
 
+  // Handle deposit method selection
+  bot.action("deposit_momo", async (ctx) => {
+    await ctx.reply(
+      "💰 እንዲሞላልዎት የሚፈልጉትን የገንዘብ መጠን ያስገቡ:"
+    );
+    await ctx.answerCbQuery();
+  });
+
+  // Fallback for any deposit_* action
   bot.action(/deposit_.*/, async (ctx) => {
-    await ctx.reply("✅ Deposit flow placeholder. Integrate your payment gateway here.");
+    // This can be used if you add more deposit methods later
     await ctx.answerCbQuery();
   });
 };
