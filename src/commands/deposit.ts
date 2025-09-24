@@ -10,13 +10,27 @@ interface UserState {
 
 const userData: Record<number, UserState> = {};
 
+// -----------------------------
+// Helper: Show deposit menu
+// -----------------------------
+function showDepositMenu(bot: TelegramBot, chatId: number) {
+  bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:", {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📱 Manual", callback_data: "deposit_momo" }],
+        [{ text: "⬅ Back", callback_data: "main_menu" }],
+      ],
+    },
+  });
+}
+
 export function depositCommand(bot: TelegramBot) {
   // ----------------------
   // /deposit command
   // ----------------------
   bot.onText(/\/deposit/, (msg: Message) => {
     const chatId = msg.chat.id;
-    showDepositMenu(chatId);
+    showDepositMenu(bot, chatId);
   });
 
   // ----------------------
@@ -54,7 +68,7 @@ export function depositCommand(bot: TelegramBot) {
           break;
 
         case "main_menu":
-          showDepositMenu(chatId);
+          showDepositMenu(bot, chatId);
           break;
       }
 
@@ -127,20 +141,6 @@ export function depositCommand(bot: TelegramBot) {
         `የከፈለችሁት መጠን: ${user.amount} ETB`);
     }
   });
-
-  // -----------------------------
-  // Helper: Show deposit menu
-  // -----------------------------
-  function showDepositMenu(chatId: number) {
-    bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "📱 Manual", callback_data: "deposit_momo" }],
-          [{ text: "⬅ Back", callback_data: "main_menu" }],
-        ],
-      },
-    });
-  }
 }
 
 export default depositCommand;
