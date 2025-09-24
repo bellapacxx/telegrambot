@@ -17,12 +17,7 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
   });
 }
 
-async function showPaymentDetails(
-  bot: TelegramBot,
-  chatId: number,
-  session: any,
-  msg: Message
-) {
+async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any, msg: Message) {
   let phone = "Not shared";
   try {
     const dbUser = await api.getUser(msg.from!.id);
@@ -31,31 +26,32 @@ async function showPaymentDetails(
     console.error("❌ Failed to fetch phone:", err);
   }
 
-  console.log("[DEBUG] Showing payment details:", {
-    name: session.name,
-    phone,
-    amount: session.amount,
-    reference: session.reference,
-  });
+  // Terminal-like copyable text
+  const paymentText = 
+`\`\`\`
+Name:       ${session.name}
+Phone:      ${phone}
+Amount:     ${session.amount}ETB
+Reference:  ${session.reference}
+\`\`\`
 
-  return bot.sendMessage(
-    chatId,
-    `💳 Payment Details / የክፍያ ዝርዝር\n\n` +
-      `Name:      ${session.name}\n` +
-      `Phone:     ${phone}\n` +
-      `Amount:    ${session.amount} ETB\n` +
-      `Reference: ${session.reference}\n\n` +
-      `ማስገባት ብር የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "💰 Telebirr → Telebirr", callback_data: "pay_telebirr" }],
-          [{ text: "⬅ Back", callback_data: "main_menu" }],
-        ],
-      },
-    }
-  );
+ብር ማስገባት የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:
+1. ከቴሌብር ወደ ኤጀንት ቴሌብር ብቻ
+2. ከንግድ ባንክ ወደ ኤጀንት ንግድ ባንክ ብቻ
+3. ከሲቢኢ ብር ወደ ኤጀንት ሲቢኢ ብር ብቻ
+4. ከአቢሲኒያ ባንክ ወደ ኤጀንት አቢሲኒያ ባንክ ብቻ`;
+
+  return bot.sendMessage(chatId, paymentText, {
+    parse_mode: "MarkdownV2",
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "💰 Telebirr → Telebirr", callback_data: "pay_telebirr" }],
+        [{ text: "⬅ Back", callback_data: "main_menu" }],
+      ],
+    },
+  });
 }
+
 
 // -----------------------------
 // Deposit Command
