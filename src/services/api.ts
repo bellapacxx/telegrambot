@@ -53,11 +53,19 @@ export const api = {
     }
     console.log("shagjdjag")
     // Step 2: Update balance in your backend
-    const updateRes = await axios.post(`${API_BASE}/deposit/verify`, {
-      userId: data.userId,
-      amount: data.expectedAmount,
-      reference: data.reference,
-    });
+    const updateRes = await axios.post(
+  `${API_BASE}/deposit/verify`,
+  {
+    userId: data.userId,
+    expectedAmount: data.expectedAmount, // must match backend struct
+    reference: data.reference,
+  },
+  {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  }
+);
 
     return { success: true, data: updateRes.data };
   } catch (err: any) {
