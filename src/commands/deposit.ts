@@ -204,7 +204,7 @@ export function depositCommand(bot: TelegramBot) {
           session.state = "deposit_verified";
           await bot.sendMessage(
             chatId,
-            `✅ ክፍያዎ ተረጋግጧል!\nመጠን: ${response.amount} ብር\nTransaction ID: ${response.txId}`
+            `✅ ክፍያዎ ተረጋግጧል!\nመጠን: ${response.amount}`
           );
         } else {
           await bot.sendMessage(
