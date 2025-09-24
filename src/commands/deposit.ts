@@ -17,12 +17,7 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
   });
 }
 
-async function showPaymentDetails(
-  bot: TelegramBot,
-  chatId: number,
-  session: any,
-  msg: Message
-) {
+async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any, msg: Message) {
   let phone = "Not shared";
   try {
     const dbUser = await api.getUser(msg.from!.id);
@@ -38,7 +33,6 @@ async function showPaymentDetails(
     reference: session.reference,
   });
 
-  // Escape MarkdownV2 special characters
   function escapeMarkdownV2(text: string) {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
   }
@@ -48,7 +42,6 @@ async function showPaymentDetails(
   const amount = escapeMarkdownV2(String(session.amount));
   const reference = escapeMarkdownV2(session.reference);
 
-  // Escape the numbered list as well
   const depositMethods = escapeMarkdownV2(
     `1. ከቴሌብር ወደ ኤጀንት ቴሌብር ብቻ
 2. ከንግድ ባንክ ወደ ኤጀንት ንግድ ባንክ ብቻ
@@ -77,21 +70,38 @@ ${depositMethods}`;
   });
 }
 
+async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: any) {
+  const account = "0952264228";
+
+  function escapeMarkdownV2(text: string) {
+    return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+  }
+
+  const amount = escapeMarkdownV2(String(session.amount));
+
+  const codeBlock = `\`\`\`
+${escapeMarkdownV2(account)}
+\`\`\`
+
+${escapeMarkdownV2(
+    `1. ከላይ ባለው የቴሌብር አካውንት ${amount}ብር ያስገቡ
+2. የምትልኩት የገንዘብ መጠን እና እዚ ላይ እንዲሞላው የምታስገቡት የብር መጠን ተመሳሳይ መሆኑን እርግጠኛ ይሁኑ
+3. ብሩን ስትልኩ የከፈላችሁበትን መረጃ አጭር መልክት(sms) ከቴሌብር ይደርሳችሁ
+4. የደረሳችሁን መልክት(sms) ሙሉ ኮፒ(copy) በመስቀል በታች ባለው ቴሌግራም ፔስት(paste) ይላኩት`
+  )}`;
+
+  return bot.sendMessage(chatId, codeBlock, { parse_mode: "MarkdownV2" });
+}
+
 // -----------------------------
 // Deposit Command
 // -----------------------------
 export function depositCommand(bot: TelegramBot) {
-  // ----------------------
-  // /deposit command
-  // ----------------------
   bot.onText(/\/deposit/, (msg: Message) => {
     console.log("[DEBUG] /deposit command received from chat:", msg.chat.id);
     showDepositMenu(bot, msg.chat.id);
   });
 
-  // ----------------------
-  // Inline button callbacks
-  // ----------------------
   bot.on("callback_query", async (query: CallbackQuery) => {
     if (!query.from?.id || !query.message?.chat.id || !query.data) return;
 
@@ -107,10 +117,11 @@ export function depositCommand(bot: TelegramBot) {
 
     try {
       switch (query.data) {
-         case "deposit":
-            resetSession(chatId); // clear old state
-            await showDepositMenu(bot, chatId);
-           break;
+        case "deposit":
+          resetSession(chatId);
+          await showDepositMenu(bot, chatId);
+          break;
+
         case "deposit_momo":
           session.state = "awaiting_deposit_amount";
           await bot.sendMessage(chatId, "💰 እባክዎ የገንዘብ መጠን ያስገቡ:");
@@ -125,10 +136,7 @@ export function depositCommand(bot: TelegramBot) {
           if (session.state !== "deposit_ready") {
             await bot.sendMessage(chatId, "⚠ እባክዎ በመጀመሪያ መጠን ያስገቡ.");
           } else {
-            await bot.sendMessage(
-              chatId,
-              `✅ Use Telebirr to send ${session.amount} ETB.\nReference: ${session.reference}`
-            );
+            await showTelebirrPayment(bot, chatId, session);
           }
           break;
       }
@@ -136,15 +144,10 @@ export function depositCommand(bot: TelegramBot) {
       await bot.answerCallbackQuery(query.id);
     } catch (err) {
       console.error("[DEPOSIT CALLBACK ERROR]", err);
-      if (query.id) {
-        await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
-      }
+      if (query.id) await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
     }
   });
 
-  // ----------------------
-  // Handle messages (deposit amount input)
-  // ----------------------
   bot.on("message", async (msg: Message) => {
     if (!msg.from?.id || !msg.chat.id || !msg.text) return;
 
@@ -152,14 +155,9 @@ export function depositCommand(bot: TelegramBot) {
     const session = getSession(chatId);
     const text = msg.text.trim();
 
-    // Only handle if waiting for amount
     if (session.state !== "awaiting_deposit_amount") return;
 
-    console.log("[DEBUG] Deposit amount input received:", {
-      text,
-      chatId,
-      userId: msg.from.id,
-    });
+    console.log("[DEBUG] Deposit amount input received:", { text, chatId, userId: msg.from.id });
 
     try {
       const amount = parseFloat(text);
@@ -168,13 +166,8 @@ export function depositCommand(bot: TelegramBot) {
       }
 
       session.amount = amount;
-      session.name =
-        [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") ||
-        "User";
-      session.reference = Math.random()
-        .toString(36)
-        .substring(2, 10)
-        .toUpperCase();
+      session.name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") || "User";
+      session.reference = Math.random().toString(36).substring(2, 10).toUpperCase();
       session.state = "deposit_ready";
 
       await showPaymentDetails(bot, chatId, session, msg);
