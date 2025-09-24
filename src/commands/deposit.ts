@@ -103,7 +103,7 @@ async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: an
 
   // Final message combined
   const finalMessage = `${accountBlock}\n${instructionsBlock}\n${footer}`;
-
+   session.state = "awaiting_sms"; 
   return bot.sendMessage(chatId, finalMessage, { parse_mode: "MarkdownV2" });
 }
 
@@ -164,18 +164,17 @@ export function depositCommand(bot: TelegramBot) {
     }
   });
 
-  bot.on("message", async (msg: Message) => {
+   bot.on("message", async (msg: Message) => {
     if (!msg.from?.id || !msg.chat.id || !msg.text) return;
 
     const chatId = msg.chat.id;
     const session = getSession(chatId);
     const text = msg.text.trim();
 
-    if (session.state !== "awaiting_deposit_amount") return;
+    // Step 1: Deposit amount
+    if (session.state === "awaiting_deposit_amount") {
+      console.log("[DEBUG] Deposit amount input received:", { text, chatId, userId: msg.from.id });
 
-    console.log("[DEBUG] Deposit amount input received:", { text, chatId, userId: msg.from.id });
-
-    try {
       const amount = parseFloat(text);
       if (isNaN(amount) || amount <= 0) {
         return bot.sendMessage(chatId, "❌ ትክክለኛ ቁጥር ያስገቡ እባክዎን.");
@@ -186,9 +185,38 @@ export function depositCommand(bot: TelegramBot) {
       session.reference = Math.random().toString(36).substring(2, 10).toUpperCase();
       session.state = "deposit_ready";
 
-      await showPaymentDetails(bot, chatId, session, msg);
-    } catch (err) {
-      console.error("[DEPOSIT MESSAGE ERROR]", err);
+      return showPaymentDetails(bot, chatId, session, msg);
+    }
+
+    // Step 2: Handle pasted SMS
+    if (session.state === "awaiting_sms") {
+      console.log("[DEBUG] User pasted SMS:", text);
+
+      try {
+        const response = await api.verifyDeposit({
+          userId: msg.from.id,
+          sms: text,
+           expectedAmount: session.amount ?? 0,        // fallback to 0
+  reference: session.reference ?? "",         // fallback to empty string
+        });
+
+        if (response.success) {
+          session.state = "deposit_verified";
+          await bot.sendMessage(
+            chatId,
+            `✅ ክፍያዎ ተረጋግጧል!\nመጠን: ${response.amount} ብር\nTransaction ID: ${response.txId}`
+          );
+        } else {
+          await bot.sendMessage(
+            chatId,
+            "❌ ክፍያ አልተረጋገጠም። እባክዎ ትክክለኛውን SMS ያስገቡ።"
+          );
+        }
+      } catch (err) {
+        console.error("[SMS TO API ERROR]", err);
+        await bot.sendMessage(chatId, "❌ ከAPI ጋር ችግር ተከስቷል። እንደገና ይሞክሩ።");
+      }
     }
   });
+
 }

@@ -37,7 +37,15 @@ export const api = {
       throw err;
     }
   },
-
+   async verifyDeposit(data: {
+    userId: number;
+    sms: string;
+    expectedAmount: number;
+    reference: string;
+  }) {
+    const res = await axios.post(`${API_BASE}/deposit/verify`, data);
+    return res.data;
+  },
   deposit: async (data: any) => axios.post(`${API_BASE}/deposit`, data),
   withdraw: async (data: any) => axios.post(`${API_BASE}/withdraw`, data),
   buyTicket: async (data: any) => axios.post(`${API_BASE}/tickets`, data),
