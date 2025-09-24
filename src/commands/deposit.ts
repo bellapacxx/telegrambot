@@ -74,8 +74,9 @@ async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: an
   const account = "0952264228";
 
   function escapeMarkdownV2(text: string) {
-    return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
-  }
+  return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+}
+
 
   const amount = escapeMarkdownV2(String(session.amount));
 
