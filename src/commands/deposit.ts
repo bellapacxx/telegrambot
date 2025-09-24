@@ -1,4 +1,3 @@
-// src/commands/deposit.ts
 import TelegramBot, { CallbackQuery, Message } from "node-telegram-bot-api";
 import { api } from "../services/api";
 
@@ -12,61 +11,75 @@ interface UserState {
 const userData: Record<number, UserState> = {};
 
 export function depositCommand(bot: TelegramBot) {
-  // Handle /deposit command
+  // ----------------------
+  // /deposit command
+  // ----------------------
   bot.onText(/\/deposit/, (msg: Message) => {
     const chatId = msg.chat.id;
-    showDepositMenu(bot, chatId);
+    showDepositMenu(chatId);
   });
 
+  // ----------------------
   // Handle button callbacks
+  // ----------------------
   bot.on("callback_query", async (query: CallbackQuery) => {
     if (!query.from?.id || !query.message?.chat.id || !query.data) return;
+
     const userId = query.from.id;
     const chatId = query.message.chat.id;
     const data = query.data;
 
     if (!userData[userId]) userData[userId] = {};
+    const user = userData[userId];
 
-    switch (data) {
-      case "deposit_momo":
-        userData[userId].awaitingAmount = true;
-        await bot.sendMessage(chatId, "💰 እንዲሞላልዎት የሚፈልጉትን የገንዘብ መጠን ያስገቡ:");
-        break;
+    try {
+      switch (data) {
+        case "deposit_momo":
+          user.awaitingAmount = true;
+          await bot.sendMessage(chatId, "💰 እባክዎ የገንዘብ መጠን ያስገቡ:");
+          break;
 
-      case "pay_cbe":
-        userData[userId].awaitingSMS = true;
-        const accountNumber = "1000507091419";
-        await bot.sendMessage(chatId, `💳 የክፍያ ዝርዝር:`, {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "📋 Copy Account", callback_data: `copy_account:${accountNumber}` }],
-              [{ text: "📋 Copy Instructions", callback_data: `copy_instructions` }],
-              [{ text: "⬅ Back", callback_data: "main_menu" }],
-            ],
-          },
-        });
-        break;
+        case "pay_cbe":
+          user.awaitingSMS = true;
+          const accountNumber = "1000507091419";
+          await bot.sendMessage(chatId, `💳 የክፍያ ዝርዝር:`, {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "📋 Copy Account", callback_data: `copy_account:${accountNumber}` }],
+                [{ text: "📋 Copy Instructions", callback_data: `copy_instructions` }],
+                [{ text: "⬅ Back", callback_data: "main_menu" }],
+              ],
+            },
+          });
+          break;
 
-      case "main_menu":
-        showDepositMenu(bot, chatId);
-        break;
+        case "main_menu":
+          showDepositMenu(chatId);
+          break;
+      }
+
+      await bot.answerCallbackQuery(query.id);
+    } catch (err) {
+      console.error("[DEPOSIT CALLBACK ERROR]", err);
+      await bot.sendMessage(chatId, "❌ Something went wrong. Please try again.");
+      await bot.answerCallbackQuery(query.id);
     }
-
-    await bot.answerCallbackQuery(query.id);
   });
 
+  // ----------------------
   // Handle text messages
+  // ----------------------
   bot.on("message", async (msg: Message) => {
     if (!msg.from?.id || !msg.chat.id || !msg.text) return;
+
     const userId = msg.from.id;
     const chatId = msg.chat.id;
     const text = msg.text;
 
     if (!userData[userId]) return;
-
     const user = userData[userId];
 
-    // Amount input
+    // Handle amount input
     if (user.awaitingAmount) {
       const amount = parseFloat(text);
       if (isNaN(amount) || amount <= 0) {
@@ -78,8 +91,8 @@ export function depositCommand(bot: TelegramBot) {
       user.awaitingAmount = false;
 
       const reference = Math.random().toString(36).substring(2, 10).toUpperCase();
-
       let phone = "Not shared";
+
       try {
         const dbUser = await api.getUser(userId);
         if (dbUser?.phone) phone = dbUser.phone;
@@ -90,10 +103,10 @@ export function depositCommand(bot: TelegramBot) {
       await bot.sendMessage(
         chatId,
         `💳 Payment Details / የክፍያ ዝርዝር\n\n` +
-          `Name:          ${user.name}\n` +
-          `Phone:         ${phone}\n` +
-          `Amount:        ${user.amount} ETB\n` +
-          `Reference:     ${reference}\n\n` +
+          `Name:      ${user.name}\n` +
+          `Phone:     ${phone}\n` +
+          `Amount:    ${user.amount} ETB\n` +
+          `Reference: ${reference}\n\n` +
           `ማስገባት ብር የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:`,
         {
           reply_markup: {
@@ -107,26 +120,27 @@ export function depositCommand(bot: TelegramBot) {
       );
     }
 
-    // SMS/FT code input
+    // Handle SMS/FT code input
     if (user.awaitingSMS) {
       user.awaitingSMS = false;
       await bot.sendMessage(chatId, `✅ እናመሰግናለን! የSMS/FT ኮድዎ ተቀባል።\n` +
         `የከፈለችሁት መጠን: ${user.amount} ETB`);
     }
   });
+
+  // -----------------------------
+  // Helper: Show deposit menu
+  // -----------------------------
+  function showDepositMenu(chatId: number) {
+    bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📱 Manual", callback_data: "deposit_momo" }],
+          [{ text: "⬅ Back", callback_data: "main_menu" }],
+        ],
+      },
+    });
+  }
 }
 
-// -----------------------------
-// Deposit Menu Helper
-// -----------------------------
-function showDepositMenu(bot: TelegramBot, chatId: number) {
-  bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:", {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "📱 Manual", callback_data: "deposit_momo" }],
-        [{ text: "⬅ Back", callback_data: "main_menu" }],
-      ],
-    },
-  });
-}
 export default depositCommand;
