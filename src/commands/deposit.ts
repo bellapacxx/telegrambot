@@ -6,7 +6,8 @@ import { getSession, resetSession } from "../middlewares/session";
 // Helpers
 // -----------------------------
 function showDepositMenu(bot: TelegramBot, chatId: number) {
-  return bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መጠን መክፈል ዘዴዎን ይምረጡ:", {
+  console.log("[DEBUG] Showing deposit menu to chat:", chatId);
+  return bot.sendMessage(chatId, "💳 እባክዎ የገንዘብ መክፈል ዘዴዎን ይምረጡ:", {
     reply_markup: {
       inline_keyboard: [
         [{ text: "📱 Manual", callback_data: "deposit_momo" }],
@@ -16,7 +17,12 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
   });
 }
 
-async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any, msg: Message) {
+async function showPaymentDetails(
+  bot: TelegramBot,
+  chatId: number,
+  session: any,
+  msg: Message
+) {
   let phone = "Not shared";
   try {
     const dbUser = await api.getUser(msg.from!.id);
@@ -24,6 +30,13 @@ async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any
   } catch (err) {
     console.error("❌ Failed to fetch phone:", err);
   }
+
+  console.log("[DEBUG] Showing payment details:", {
+    name: session.name,
+    phone,
+    amount: session.amount,
+    reference: session.reference,
+  });
 
   return bot.sendMessage(
     chatId,
@@ -48,20 +61,31 @@ async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any
 // Deposit Command
 // -----------------------------
 export function depositCommand(bot: TelegramBot) {
-  // Handle /deposit
+  // ----------------------
+  // /deposit command
+  // ----------------------
   bot.onText(/\/deposit/, (msg: Message) => {
-    console.log("[DEBUG] /deposit command from", msg.chat.id);
+    console.log("[DEBUG] /deposit command received from chat:", msg.chat.id);
     showDepositMenu(bot, msg.chat.id);
   });
 
-  // Handle callbacks
+  // ----------------------
+  // Inline button callbacks
+  // ----------------------
   bot.on("callback_query", async (query: CallbackQuery) => {
+    if (!query.from?.id || !query.message?.chat.id || !query.data) return;
+
+    const chatId = query.message.chat.id;
+    const session = getSession(chatId);
+
+    console.log("[DEBUG] Callback query received:", {
+      data: query.data,
+      chatId,
+      userId: query.from.id,
+      session,
+    });
+
     try {
-      if (!query.from?.id || !query.message?.chat.id || !query.data) return;
-
-      const chatId = query.message.chat.id;
-      const session = getSession(chatId);
-
       switch (query.data) {
         case "deposit_momo":
           session.state = "awaiting_deposit_amount";
@@ -88,31 +112,45 @@ export function depositCommand(bot: TelegramBot) {
       await bot.answerCallbackQuery(query.id);
     } catch (err) {
       console.error("[DEPOSIT CALLBACK ERROR]", err);
-      if (query.id) await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
+      if (query.id) {
+        await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
+      }
     }
   });
 
+  // ----------------------
   // Handle messages (deposit amount input)
+  // ----------------------
   bot.on("message", async (msg: Message) => {
+    if (!msg.from?.id || !msg.chat.id || !msg.text) return;
+
+    const chatId = msg.chat.id;
+    const session = getSession(chatId);
+    const text = msg.text.trim();
+
+    // Only handle if waiting for amount
+    if (session.state !== "awaiting_deposit_amount") return;
+
+    console.log("[DEBUG] Deposit amount input received:", {
+      text,
+      chatId,
+      userId: msg.from.id,
+    });
+
     try {
-      if (!msg.from?.id || !msg.chat.id || !msg.text) return;
-
-      const chatId = msg.chat.id;
-      const session = getSession(chatId);
-      const text = msg.text.trim();
-
-      if (session.state !== "awaiting_deposit_amount") return;
-
-      console.log("[DEBUG] Processing deposit amount:", text);
-
       const amount = parseFloat(text);
       if (isNaN(amount) || amount <= 0) {
         return bot.sendMessage(chatId, "❌ ትክክለኛ ቁጥር ያስገቡ እባክዎን.");
       }
 
       session.amount = amount;
-      session.name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") || "User";
-      session.reference = Math.random().toString(36).substring(2, 10).toUpperCase();
+      session.name =
+        [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") ||
+        "User";
+      session.reference = Math.random()
+        .toString(36)
+        .substring(2, 10)
+        .toUpperCase();
       session.state = "deposit_ready";
 
       await showPaymentDetails(bot, chatId, session, msg);
