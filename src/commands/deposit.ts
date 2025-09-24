@@ -38,19 +38,33 @@ async function showPaymentDetails(
     reference: session.reference,
   });
 
-  // Terminal-style code block for Telegram "Copy code"
+  // Escape MarkdownV2 special characters
+  function escapeMarkdownV2(text: string) {
+    return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+  }
+
+  const name = escapeMarkdownV2(session.name);
+  const phoneEscaped = escapeMarkdownV2(phone);
+  const amount = escapeMarkdownV2(String(session.amount));
+  const reference = escapeMarkdownV2(session.reference);
+
+  // Escape the numbered list as well
+  const depositMethods = escapeMarkdownV2(
+    `1. ከቴሌብር ወደ ኤጀንት ቴሌብር ብቻ
+2. ከንግድ ባንክ ወደ ኤጀንት ንግድ ባንክ ብቻ
+3. ከሲቢኢ ብር ወደ ኤጀንት ሲቢኢ ብር ብቻ
+4. ከአቢሲኒያ ባንክ ወደ ኤጀንት አቢሲኒያ ባንክ ብቻ`
+  );
+
   const codeBlock = `\`\`\`
-Name:      ${session.name}
-Phone:     ${phone}
-Amount:    ${session.amount} ETB
-Reference: ${session.reference}
+Name:      ${name}
+Phone:     ${phoneEscaped}
+Amount:    ${amount}ETB
+Reference: ${reference}
 \`\`\`
 
 ብር ማስገባት የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:
-1. ከቴሌብር ወደ ኤጀንት ቴሌብር ብቻ
-2. ከንግድ ባንክ ወደ ኤጀንት ንግድ ባንክ ብቻ
-3. ከሲቢኢ ብር ወደ ኤጀንት ሲቢኢ ብር ብቻ
-4. ከአቢሲኒያ ባንክ ወደ ኤጀንት አቢሲኒያ ባንክ ብቻ`;
+${depositMethods}`;
 
   return bot.sendMessage(chatId, codeBlock, {
     parse_mode: "MarkdownV2",
@@ -62,7 +76,6 @@ Reference: ${session.reference}
     },
   });
 }
-
 
 // -----------------------------
 // Deposit Command
