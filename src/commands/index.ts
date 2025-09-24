@@ -1,7 +1,7 @@
 import TelegramBot from "node-telegram-bot-api";
 import  startCommand  from "./start";
 import  balanceCommand  from "./balance";
-import depositCommand  from "./deposit";
+import {depositCommand } from "./deposit";
 import withdrawCommand  from "./withdraw";
 import playCommand  from "./play";
 
