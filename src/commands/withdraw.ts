@@ -12,7 +12,21 @@ export const withdrawCommand = (bot: TelegramBot) => {
     // Withdraw from main menu
     if (query.data === "withdraw") {
       session.state = "awaiting_amount";
-      bot.sendMessage(chatId, "🏦 Enter amount to withdraw:");
+      bot.sendMessage(chatId, "🏦 Please enter the amount to withdraw:", {
+        reply_markup: {
+          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
+        },
+      });
+      bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    // Back button to main menu
+    if (query.data === "back_main") {
+      resetSession(chatId);
+      bot.sendMessage(chatId, "🏠 Returning to main menu", {
+        reply_markup: { inline_keyboard: [] }, // you can add main menu buttons here
+      });
       bot.answerCallbackQuery(query.id);
       return;
     }
@@ -22,7 +36,11 @@ export const withdrawCommand = (bot: TelegramBot) => {
       session.tempData = { method: query.data === "method_telebirr" ? "Telebirr" : "CBE" };
       session.state = "awaiting_account";
 
-      bot.sendMessage(chatId, `📄 Enter your ${session.tempData.method} account number:`);
+      bot.sendMessage(chatId, `📄 Please enter your ${session.tempData.method} account number:`, {
+        reply_markup: {
+          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
+        },
+      });
       bot.answerCallbackQuery(query.id);
       return;
     }
@@ -44,12 +62,13 @@ export const withdrawCommand = (bot: TelegramBot) => {
         session.amount = amount;
         session.state = "awaiting_method";
 
-        // Show inline buttons for method selection
-        bot.sendMessage(chatId, "💳 Choose payment method:", {
+        // Show inline buttons for method selection with back button
+        bot.sendMessage(chatId, "💳 Please choose a payment method:", {
           reply_markup: {
             inline_keyboard: [
               [{ text: "Telebirr", callback_data: "method_telebirr" }],
               [{ text: "CBE", callback_data: "method_cbe" }],
+              [{ text: "🔙 Back", callback_data: "back_main" }],
             ],
           },
         });
@@ -66,7 +85,12 @@ export const withdrawCommand = (bot: TelegramBot) => {
 
         bot.sendMessage(
           chatId,
-          "✅ Your withdrawal request has been submitted!\n\n📌 Please wait up to 2 minutes for processing. If there is any delay, our admin @bpac12 will follow up."
+          "✅ Your withdrawal request has been submitted!\n\n📌 Please wait up to 2 minutes for processing. If there is any delay, our admin @bpac12 will follow up.",
+          {
+            reply_markup: {
+              inline_keyboard: [[{ text: "🏠 Back to Main Menu", callback_data: "back_main" }]],
+            },
+          }
         );
 
         resetSession(chatId);
