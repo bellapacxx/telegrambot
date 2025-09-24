@@ -67,9 +67,9 @@ export const api = {
   }
 );
 
-    return { success: true, data: updateRes.data };
+    return { success: true,amount : data.expectedAmount  ,data: updateRes.data };
   } catch (err: any) {
-    return { success: false, message: err.message,amount : data.expectedAmount || "Unknown error" };
+    return { success: false, message: err.message || "Unknown error" };
   }
 },
 
