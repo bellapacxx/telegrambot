@@ -96,24 +96,21 @@ const playCommand = (bot: TelegramBot) => {
        
 
         // Respond to Telegram
-        await bot.sendMessage(
-          chatId,
-          `🎮 You selected *${stake} ETB*.\n✅ Connected to the lobby!`,
-          {
-            parse_mode: "Markdown",
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "🌐 Open Lobby in Browser",
-                    url: `https://your-frontend-lobby.com/${stake}?user=${telegramId}`,
-                  },
-                ],
-                [{ text: "⬅ Back", callback_data: "play" }],
-              ],
-            },
-          }
-        );
+        await bot.sendMessage(chatId, `🎮 You selected *${stake} ETB*.\n✅!`, {
+  parse_mode: "Markdown",
+  reply_markup: {
+    inline_keyboard: [
+      [
+        {
+          text: "Open App",
+          web_app: { url: `https://bot-frontend-urwm.vercel.app/stake/${stake}?user=${telegramId}` },
+        },
+      ],
+      [{ text: "⬅ Back", callback_data: "play" }],
+    ],
+  },
+});
+
 
         return bot.answerCallbackQuery(query.id);
       }
