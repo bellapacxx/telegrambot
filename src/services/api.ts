@@ -51,7 +51,7 @@ export const api = {
       // Verification failed
       return { success: false, message: verifyRes.data.message || "Verification failed" };
     }
-
+    console.log("shagjdjag")
     // Step 2: Update balance in your backend
     const updateRes = await axios.post(`${API_BASE}/deposit/verify`, {
       userId: data.userId,
