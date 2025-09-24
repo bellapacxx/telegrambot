@@ -21,28 +21,30 @@ export function depositCommand(bot: TelegramBot) {
   // /deposit command
   // ----------------------
   bot.onText(/\/deposit/, (msg: Message) => {
-    const chatId = msg.chat.id;
-    showDepositMenu(bot, chatId);
+    console.log("[DEBUG] /deposit command received from", msg.chat.id);
+    showDepositMenu(bot, msg.chat.id);
   });
 
   // ----------------------
   // Handle button callbacks
   // ----------------------
   bot.on("callback_query", async (query: CallbackQuery) => {
+    console.log("[DEBUG] Callback query:", query.data, "from", query.from?.id);
     if (!query.from?.id || !query.message?.chat.id || !query.data) return;
 
     const chatId = query.message.chat.id;
-    const telegramId = query.from.id;
-    const session = getSession(chatId); // use chatId instead
+    const session = getSession(chatId);
 
     try {
       switch (query.data) {
         case "deposit_momo":
+          console.log("[DEBUG] User clicked Manual deposit");
           session.state = "awaiting_deposit_amount";
           await bot.sendMessage(chatId, "💰 እባክዎ የገንዘብ መጠን ያስገቡ:");
           break;
 
         case "main_menu":
+          console.log("[DEBUG] User clicked Back to main menu");
           delete session.state;
           await bot.sendMessage(chatId, "⬅ Back to main menu");
           break;
@@ -67,6 +69,8 @@ export function depositCommand(bot: TelegramBot) {
     const text = msg.text;
 
     if (session.state !== "awaiting_deposit_amount") return;
+
+    console.log("[DEBUG] Processing deposit amount:", text);
 
     const amount = parseFloat(text);
     if (isNaN(amount) || amount <= 0) {

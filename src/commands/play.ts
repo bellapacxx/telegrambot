@@ -93,8 +93,7 @@ const playCommand = (bot: TelegramBot) => {
           return bot.answerCallbackQuery(query.id);
         }
 
-        // Connect to WebSocket lobby
-        api.connectLobby(stake, telegramId);
+       
 
         // Respond to Telegram
         await bot.sendMessage(
