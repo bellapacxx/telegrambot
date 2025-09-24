@@ -17,7 +17,12 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
   });
 }
 
-async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any, msg: Message) {
+async function showPaymentDetails(
+  bot: TelegramBot,
+  chatId: number,
+  session: any,
+  msg: Message
+) {
   let phone = "Not shared";
   try {
     const dbUser = await api.getUser(msg.from!.id);
@@ -26,13 +31,19 @@ async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any
     console.error("❌ Failed to fetch phone:", err);
   }
 
-  // Terminal-like copyable text
-  const paymentText = 
-`\`\`\`
-Name:       ${session.name}
-Phone:      ${phone}
-Amount:     ${session.amount}ETB
-Reference:  ${session.reference}
+  console.log("[DEBUG] Showing payment details:", {
+    name: session.name,
+    phone,
+    amount: session.amount,
+    reference: session.reference,
+  });
+
+  // Terminal-style code block for Telegram "Copy code"
+  const codeBlock = `\`\`\`
+Name:      ${session.name}
+Phone:     ${phone}
+Amount:    ${session.amount} ETB
+Reference: ${session.reference}
 \`\`\`
 
 ብር ማስገባት የምችሉት ከታች ባሉት አማራጮች ብቻ ነው:
@@ -41,7 +52,7 @@ Reference:  ${session.reference}
 3. ከሲቢኢ ብር ወደ ኤጀንት ሲቢኢ ብር ብቻ
 4. ከአቢሲኒያ ባንክ ወደ ኤጀንት አቢሲኒያ ባንክ ብቻ`;
 
-  return bot.sendMessage(chatId, paymentText, {
+  return bot.sendMessage(chatId, codeBlock, {
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
