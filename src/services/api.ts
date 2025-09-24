@@ -3,7 +3,7 @@ import WebSocket from "ws"; // Node WebSocket library
 
 const API_BASE = process.env.BACKEND_URL || "https://bingo-backend-production-32e1.up.railway.app/api";
 const WS_BASE = process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws";
-
+const verify_BASE = process.env.VERIFY_URL || "https://smsverifierapi-production.up.railway.app/api/verify-deposit"
 export const api = {
   // ----------------------
   // User APIs
@@ -38,14 +38,33 @@ export const api = {
     }
   },
    async verifyDeposit(data: {
-    userId: number;
-    sms: string;
-    expectedAmount: number;
-    reference: string;
-  }) {
-    const res = await axios.post(`${API_BASE}/deposit/verify`, data);
-    return res.data;
-  },
+  userId: number;
+  sms: string;
+  expectedAmount: number;
+  reference: string;
+}) {
+  try {
+    // Step 1: Call the SMS verifier API
+    const verifyRes = await axios.post(verify_BASE, { body: data.sms });
+
+    if (verifyRes.data.status !== "success") {
+      // Verification failed
+      return { success: false, message: verifyRes.data.message || "Verification failed" };
+    }
+
+    // Step 2: Update balance in your backend
+    const updateRes = await axios.post(`${API_BASE}/deposit/verify`, {
+      userId: data.userId,
+      amount: data.expectedAmount,
+      reference: data.reference,
+    });
+
+    return { success: true, data: updateRes.data };
+  } catch (err: any) {
+    return { success: false, message: err.message,amount : data.expectedAmount || "Unknown error" };
+  }
+},
+
   deposit: async (data: any) => axios.post(`${API_BASE}/deposit`, data),
   withdraw: async (data: any) => axios.post(`${API_BASE}/withdraw`, data),
   buyTicket: async (data: any) => axios.post(`${API_BASE}/tickets`, data),
