@@ -53,20 +53,6 @@ export function depositCommand(bot: TelegramBot) {
           await bot.sendMessage(chatId, "💰 እባክዎ የገንዘብ መጠን ያስገቡ:");
           break;
 
-        case "pay_cbe":
-          user.awaitingSMS = true;
-          const accountNumber = "1000507091419";
-          await bot.sendMessage(chatId, `💳 የክፍያ ዝርዝር:`, {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "📋 Copy Account", callback_data: `copy_account:${accountNumber}` }],
-                [{ text: "📋 Copy Instructions", callback_data: `copy_instructions` }],
-                [{ text: "⬅ Back", callback_data: "main_menu" }],
-              ],
-            },
-          });
-          break;
-
         case "main_menu":
           showDepositMenu(bot, chatId);
           break;
@@ -126,7 +112,6 @@ export function depositCommand(bot: TelegramBot) {
           reply_markup: {
             inline_keyboard: [
               [{ text: "💰 Telebirr → Telebirr", callback_data: "pay_telebirr" }],
-              [{ text: "🏦 CBE → CBE", callback_data: "pay_cbe" }],
               [{ text: "⬅ Back", callback_data: "main_menu" }],
             ],
           },
@@ -134,7 +119,7 @@ export function depositCommand(bot: TelegramBot) {
       );
     }
 
-    // Handle SMS/FT code input
+    // Handle SMS/FT code input (currently unused, but kept for future)
     if (user.awaitingSMS) {
       user.awaitingSMS = false;
       await bot.sendMessage(chatId, `✅ እናመሰግናለን! የSMS/FT ኮድዎ ተቀባል።\n` +
