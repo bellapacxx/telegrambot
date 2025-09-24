@@ -87,6 +87,10 @@ export function depositCommand(bot: TelegramBot) {
 
     try {
       switch (query.data) {
+         case "deposit":
+            resetSession(chatId); // clear old state
+            await showDepositMenu(bot, chatId);
+           break;
         case "deposit_momo":
           session.state = "awaiting_deposit_amount";
           await bot.sendMessage(chatId, "💰 እባክዎ የገንዘብ መጠን ያስገቡ:");
