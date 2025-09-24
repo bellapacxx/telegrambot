@@ -3,6 +3,10 @@ import TelegramBot from "node-telegram-bot-api";
 export interface MySession {
   state?: string;
   tempData?: any;
+
+  // Deposit-specific fields
+  amount?: number;
+  name?: string;
 }
 
 // Simple in-memory session store
