@@ -25,20 +25,18 @@ export const startCommand = (bot: TelegramBot) => {
         session.state = "awaiting_phone";
         return bot.sendMessage(chatId, "📱 Please share your phone number to complete registration.", {
           reply_markup: {
-            keyboard: [
-              [{ text: "📲 Share Phone Number", request_contact: true }]
-            ],
+            keyboard: [[{ text: "📲 Share Phone Number", request_contact: true }]],
             resize_keyboard: true,
-            one_time_keyboard: true
-          }
+            one_time_keyboard: true,
+          },
         });
       }
 
-      // user exists, reset session and show menu
+      // User exists, reset session and show menu
       session.state = undefined;
       return bot.sendMessage(chatId, `👋 Welcome back, *${username}*!`, {
         parse_mode: "Markdown",
-        reply_markup: mainMenuKeyboard()
+        reply_markup: mainMenuKeyboard(),
       });
     } catch (err) {
       console.error("❌ Error checking user:", err);
@@ -80,6 +78,7 @@ export const startCommand = (bot: TelegramBot) => {
       }
 
       session.state = undefined; // clear state
+
       await bot.sendMessage(chatId, `✅ Registration complete!\n👋 Welcome, *${username}*!`, {
         parse_mode: "Markdown",
         reply_markup: mainMenuKeyboard(),
