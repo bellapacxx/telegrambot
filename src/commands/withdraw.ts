@@ -7,12 +7,24 @@ export const withdrawCommand = (bot: TelegramBot) => {
     const chatId = query.message?.chat.id;
     if (!chatId || !query.data) return;
 
-    if (query.data === "withdraw") {
-      const session = getSession(chatId);
-      session.state = "awaiting_amount";
+    const session = getSession(chatId);
 
+    // Withdraw from main menu
+    if (query.data === "withdraw") {
+      session.state = "awaiting_amount";
       bot.sendMessage(chatId, "🏦 Enter amount to withdraw:");
-      bot.answerCallbackQuery(query.id); // removes the loading animation on button click
+      bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    // Telebirr/CBE selection buttons
+    if (query.data === "method_telebirr" || query.data === "method_cbe") {
+      session.tempData = { method: query.data === "method_telebirr" ? "Telebirr" : "CBE" };
+      session.state = "awaiting_account";
+
+      bot.sendMessage(chatId, `📄 Enter your ${session.tempData.method} account number:`);
+      bot.answerCallbackQuery(query.id);
+      return;
     }
   });
 
@@ -32,27 +44,15 @@ export const withdrawCommand = (bot: TelegramBot) => {
         session.amount = amount;
         session.state = "awaiting_method";
 
+        // Show inline buttons for method selection
         bot.sendMessage(chatId, "💳 Choose payment method:", {
           reply_markup: {
-            keyboard: [
-              [{ text: "Telebirr" }],
-              [{ text: "CBE" }],
+            inline_keyboard: [
+              [{ text: "Telebirr", callback_data: "method_telebirr" }],
+              [{ text: "CBE", callback_data: "method_cbe" }],
             ],
-            one_time_keyboard: true,
-            resize_keyboard: true,
           },
         });
-        break;
-
-      case "awaiting_method":
-        if (text !== "Telebirr" && text !== "CBE") {
-          bot.sendMessage(chatId, "❌ Please choose either Telebirr or CBE.");
-          return;
-        }
-        session.tempData = { method: text };
-        session.state = "awaiting_account";
-
-        bot.sendMessage(chatId, `📄 Enter your ${text} account number:`);
         break;
 
       case "awaiting_account":
