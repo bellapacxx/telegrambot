@@ -2,7 +2,7 @@ import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
-export const balanceCommand = (bot: TelegramBot) => {
+const balanceCommand = (bot: TelegramBot) => {
   // ----------------------
   // /balance command
   // ----------------------
@@ -20,9 +20,11 @@ export const balanceCommand = (bot: TelegramBot) => {
       const user = await api.getUser(telegramId);
 
       if (!user) {
-        return bot.sendMessage(chatId, "⚠️ You are not registered yet. Please use /start to register.", {
-          reply_markup: mainMenuKeyboard(),
-        });
+        return bot.sendMessage(
+          chatId,
+          "⚠️ You are not registered yet. Please use /start to register.",
+          { reply_markup: mainMenuKeyboard() }
+        );
       }
 
       const balance = user.balance ?? 0;
@@ -52,24 +54,26 @@ export const balanceCommand = (bot: TelegramBot) => {
       const user = await api.getUser(telegramId);
 
       if (!user) {
-        await bot.sendMessage(chatId, "⚠️ You are not registered yet. Please use /start to register.", {
-          reply_markup: mainMenuKeyboard(),
-        });
+        await bot.sendMessage(
+          chatId,
+          "⚠️ You are not registered yet. Please use /start to register.",
+          { reply_markup: mainMenuKeyboard() }
+        );
       } else {
         const balance = user.balance ?? 0;
         await bot.sendMessage(chatId, `💰 Balance: ${balance} ETB`, {
           reply_markup: mainMenuKeyboard(),
         });
       }
-
-      await bot.answerCallbackQuery(query.id);
     } catch (err) {
       console.error("[BALANCE CALLBACK ERROR]", err);
       await bot.sendMessage(chatId, "❌ Unable to fetch balance. Please try again later.", {
         reply_markup: mainMenuKeyboard(),
       });
-      await bot.answerCallbackQuery(query.id);
+    } finally {
+      await bot.answerCallbackQuery(query.id); // always answer to clear "loading..."
     }
   });
 };
+
 export default balanceCommand;

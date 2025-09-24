@@ -2,7 +2,7 @@ import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
 
-export const playCommand = (bot: TelegramBot) => {
+const playCommand = (bot: TelegramBot) => {
   // ----------------------
   // Show play options
   // ----------------------
@@ -43,56 +43,64 @@ export const playCommand = (bot: TelegramBot) => {
 
     if (!chatId || !telegramId || !data) return;
 
-    // Back to main menu
-    if (data === "main_menu") {
-      await bot.sendMessage(chatId, "⬅ Back to main menu", {
-        reply_markup: mainMenuKeyboard(),
-      });
-      return bot.answerCallbackQuery(query.id);
-    }
-
-    // Show stake options
-    if (data === "play") {
-      await showPlayOptions(chatId);
-      return bot.answerCallbackQuery(query.id);
-    }
-
-    // Handle stake selection
-    if (/play_\d+/.test(data)) {
-      const stake = parseInt(data.replace("play_", ""), 10);
-      await bot.answerCallbackQuery(query.id);
-
-      // Ensure user exists
-      const userExists = await api.checkUser(telegramId);
-      if (!userExists) {
-        await api.registerUser({
-          telegram_id: telegramId,
-          username: query.from.username || query.from.first_name || "Anonymous",
-          phone: "",
+    try {
+      // Back to main menu
+      if (data === "main_menu") {
+        await bot.sendMessage(chatId, "⬅ Back to main menu", {
+          reply_markup: mainMenuKeyboard(),
         });
+        return bot.answerCallbackQuery(query.id);
       }
 
-      // Connect to WebSocket lobby
-      api.connectLobby(stake, telegramId);
+      // Show stake options again
+      if (data === "play") {
+        await showPlayOptions(chatId);
+        return bot.answerCallbackQuery(query.id);
+      }
 
-      // Respond to Telegram
-      await bot.sendMessage(
-        chatId,
-        `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby.`,
-        {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "Open Lobby in Browser",
-                  url: `https://your-frontend-lobby.com/${stake}?user=${telegramId}`,
-                },
-              ],
-            ],
-          },
+      // Handle stake selection
+      if (/^play_\d+$/.test(data)) {
+        const stake = parseInt(data.replace("play_", ""), 10);
+
+        // Ensure user exists
+        const userExists = await api.checkUser(telegramId);
+        if (!userExists) {
+          await api.registerUser({
+            telegram_id: telegramId,
+            username: query.from.username || query.from.first_name || "Anonymous",
+            phone: "",
+          });
         }
-      );
+
+        // Connect to WebSocket lobby
+        api.connectLobby(stake, telegramId);
+
+        // Respond to Telegram
+        await bot.sendMessage(
+          chatId,
+          `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby.`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Open Lobby in Browser",
+                    url: `https://your-frontend-lobby.com/${stake}?user=${telegramId}`,
+                  },
+                ],
+              ],
+            },
+          }
+        );
+
+        return bot.answerCallbackQuery(query.id);
+      }
+    } catch (err) {
+      console.error("[PLAY CALLBACK ERROR]", err);
+      await bot.sendMessage(chatId, "❌ Something went wrong. Please try again.");
+      return bot.answerCallbackQuery(query.id);
     }
   });
 };
+
 export default playCommand;
