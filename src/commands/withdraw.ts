@@ -77,7 +77,7 @@ export const withdrawCommand = (bot: TelegramBot) => {
       case "awaiting_account":
         session.tempData = { ...session.tempData, account: text };
 
-        const adminChatId = "@bpac12";
+        const adminChatId = 7762372471;
         bot.sendMessage(
           adminChatId,
           `💸 New withdrawal request:\nAmount: ${session.amount}\nMethod: ${session.tempData.method}\nAccount: ${session.tempData.account}`
