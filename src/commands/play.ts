@@ -6,7 +6,7 @@ const playCommand = (bot: TelegramBot) => {
   // ----------------------
   // Show play options
   // ----------------------
-  const showPlayOptions = (chatId: number) => {
+  const showPlayOptions = async (chatId: number) => {
     const options: TelegramBot.SendMessageOptions = {
       reply_markup: {
         inline_keyboard: [
@@ -24,6 +24,21 @@ const playCommand = (bot: TelegramBot) => {
     };
 
     return bot.sendMessage(chatId, "🎮 Choose your stake:", options);
+  };
+
+  // ----------------------
+  // Ensure user exists
+  // ----------------------
+  const ensureUser = async (telegramId: number, username: string) => {
+    const exists = await api.checkUser(telegramId);
+    if (!exists) {
+      await api.registerUser({
+        telegram_id: telegramId,
+        username,
+        phone: "",
+      });
+    }
+    return api.getUser(telegramId);
   };
 
   // ----------------------
@@ -63,13 +78,19 @@ const playCommand = (bot: TelegramBot) => {
         const stake = parseInt(data.replace("play_", ""), 10);
 
         // Ensure user exists
-        const userExists = await api.checkUser(telegramId);
-        if (!userExists) {
-          await api.registerUser({
-            telegram_id: telegramId,
-            username: query.from.username || query.from.first_name || "Anonymous",
-            phone: "",
-          });
+        const user = await ensureUser(
+          telegramId,
+          query.from.username || query.from.first_name || "Anonymous"
+        );
+
+        // Balance check
+        if (!user || user.balance < stake) {
+          await bot.sendMessage(
+            chatId,
+            `❌ Insufficient balance!\n💰 Your balance: ${user?.balance ?? 0} ETB\n\nPlease deposit before playing.`,
+            { reply_markup: mainMenuKeyboard() }
+          );
+          return bot.answerCallbackQuery(query.id);
         }
 
         // Connect to WebSocket lobby
@@ -78,16 +99,18 @@ const playCommand = (bot: TelegramBot) => {
         // Respond to Telegram
         await bot.sendMessage(
           chatId,
-          `🎮 You selected ${stake} ETB.\nYou are now connected to the lobby.`,
+          `🎮 You selected *${stake} ETB*.\n✅ Connected to the lobby!`,
           {
+            parse_mode: "Markdown",
             reply_markup: {
               inline_keyboard: [
                 [
                   {
-                    text: "Open Lobby in Browser",
+                    text: "🌐 Open Lobby in Browser",
                     url: `https://your-frontend-lobby.com/${stake}?user=${telegramId}`,
                   },
                 ],
+                [{ text: "⬅ Back", callback_data: "play" }],
               ],
             },
           }
@@ -97,7 +120,10 @@ const playCommand = (bot: TelegramBot) => {
       }
     } catch (err) {
       console.error("[PLAY CALLBACK ERROR]", err);
-      await bot.sendMessage(chatId, "❌ Something went wrong. Please try again.");
+      await bot.sendMessage(
+        chatId,
+        "❌ Something went wrong while joining the lobby.\nPlease try again later."
+      );
       return bot.answerCallbackQuery(query.id);
     }
   });

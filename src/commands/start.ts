@@ -1,50 +1,72 @@
-import { Telegraf, Markup, Context } from "telegraf";
+import TelegramBot, { Message } from "node-telegram-bot-api";
 import { mainMenuKeyboard } from "../keyboards/mainMenu";
 import { api } from "../services/api";
+import { getSession } from "../middlewares/session";
 
-export default (bot: Telegraf<Context>) => {
-  bot.start(async (ctx) => {
-    const telegramId = ctx.from?.id;
-    const username = ctx.from?.username || "Player";
+export const startCommand = (bot: TelegramBot) => {
+  // ----------------------
+  // /start command
+  // ----------------------
+  bot.onText(/^\/start$/, async (msg: Message) => {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id;
+    const username = msg.from?.username || msg.from?.first_name || "Player";
 
     if (!telegramId) {
-      return ctx.reply("❌ Cannot identify you. Please try again.");
+      return bot.sendMessage(chatId, "❌ Cannot identify you. Please try again.");
     }
+
+    const session = getSession(chatId);
 
     try {
       const exists = await api.checkUser(telegramId);
 
       if (!exists) {
-        // ask for phone number if new
-        await ctx.reply(
-          "📱 Please share your phone number to complete registration:",
-          Markup.keyboard([Markup.button.contactRequest("📲 Share Phone Number")])
-            .resize()
-            .oneTime()
-        );
-        return;
+        session.state = "awaiting_phone";
+        return bot.sendMessage(chatId, "📱 Please share your phone number to complete registration.", {
+          reply_markup: {
+            keyboard: [
+              [{ text: "📲 Share Phone Number", request_contact: true }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+          }
+        });
       }
 
-      // user exists, show menu
-      await ctx.reply(`👋 Welcome back ${username}!`, mainMenuKeyboard());
+      // user exists, reset session and show menu
+      session.state = undefined;
+      return bot.sendMessage(chatId, `👋 Welcome back, *${username}*!`, {
+        parse_mode: "Markdown",
+        reply_markup: mainMenuKeyboard()
+      });
     } catch (err) {
       console.error("❌ Error checking user:", err);
-      await ctx.reply("❌ Registration failed. Try again later.");
+      return bot.sendMessage(chatId, "⚠️ Registration check failed. Please try again later.");
     }
   });
 
+  // ----------------------
   // Handle contact (phone number)
-  bot.on("contact", async (ctx) => {
-    const telegramId = ctx.from?.id;
-    const username = ctx.from?.username || "Player";
-    const phone = ctx.message?.contact?.phone_number;
+  // ----------------------
+  bot.on("contact", async (msg: Message) => {
+    const chatId = msg.chat.id;
+    const telegramId = msg.from?.id;
+    const username = msg.from?.username || msg.from?.first_name || "Player";
+    const phone = msg.contact?.phone_number;
 
     if (!telegramId || !phone) {
-      return ctx.reply("❌ Could not get your phone number. Please try again.");
+      return bot.sendMessage(chatId, "❌ Could not get your phone number. Please try again.");
+    }
+
+    const session = getSession(chatId);
+
+    if (session.state !== "awaiting_phone") {
+      // Ignore random contact messages
+      return;
     }
 
     try {
-      // Attempt to register user
       const userExists = await api.checkUser(telegramId);
 
       if (!userExists) {
@@ -54,17 +76,19 @@ export default (bot: Telegraf<Context>) => {
           phone,
         });
       } else {
-        // update phone if user exists
         await api.updatePhone(telegramId, phone);
       }
 
-      await ctx.reply(
-        `✅ Registration complete!\n👋 Welcome ${username}`,
-        mainMenuKeyboard()
-      );
+      session.state = undefined; // clear state
+      await bot.sendMessage(chatId, `✅ Registration complete!\n👋 Welcome, *${username}*!`, {
+        parse_mode: "Markdown",
+        reply_markup: mainMenuKeyboard(),
+      });
     } catch (err) {
       console.error("❌ Registration error:", err);
-      await ctx.reply("❌ Failed to register. Try again later.");
+      await bot.sendMessage(chatId, "⚠️ Failed to register. Please try again later.");
     }
   });
 };
+
+export default startCommand;

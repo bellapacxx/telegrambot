@@ -1,10 +1,29 @@
-import { Context, session } from "telegraf";
+import TelegramBot from "node-telegram-bot-api";
 
 export interface MySession {
   state?: string;
   tempData?: any;
 }
 
-export type MyContext = Context & { session: MySession };
+// Simple in-memory session store
+const sessions: Record<number, MySession> = {};
 
-export const sessionMiddleware = session({ defaultSession: (): MySession => ({}) });
+// Get session for a chat
+export const getSession = (chatId: number): MySession => {
+  if (!sessions[chatId]) {
+    sessions[chatId] = {};
+  }
+  return sessions[chatId];
+};
+
+// Middleware-like wrapper (manual since node-telegram-bot-api has no middleware)
+export const withSession = (
+  bot: TelegramBot,
+  handler: (msg: TelegramBot.Message, session: MySession) => void
+) => {
+  bot.on("message", (msg) => {
+    if (!msg.chat) return;
+    const session = getSession(msg.chat.id);
+    handler(msg, session);
+  });
+};
