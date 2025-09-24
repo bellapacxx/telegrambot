@@ -33,7 +33,7 @@ export const startCommand = (bot: TelegramBot) => {
       }
 
       // User exists, reset session and show menu
-      session.state = undefined;
+     delete session.state;
       return bot.sendMessage(chatId, `👋 Welcome back, *${username}*!`, {
         parse_mode: "Markdown",
         reply_markup: mainMenuKeyboard(),
@@ -77,7 +77,7 @@ export const startCommand = (bot: TelegramBot) => {
         await api.updatePhone(telegramId, phone);
       }
 
-      session.state = undefined; // clear state
+      delete session.state; // clear state
 
       await bot.sendMessage(chatId, `✅ Registration complete!\n👋 Welcome, *${username}*!`, {
         parse_mode: "Markdown",
