@@ -64,7 +64,7 @@ ${depositMethods}`;
     reply_markup: {
       inline_keyboard: [
         [{ text: "💰 Telebirr ወደ Telebirr", callback_data: "pay_telebirr" }],
-        [{ text: "💰 CBE ወደs CBE", callback_data: "pay_cbe" }],
+        [{ text: "💰 CBE ወደ CBE", callback_data: "pay_cbe" }],
         [{ text: "⬅ Back", callback_data: "main_menu" }],
       ],
     },

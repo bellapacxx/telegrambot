@@ -1,7 +1,7 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { registerCommands } from "./commands";
-
+import { registerBotMenu } from "./utils/menu";
 dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -19,6 +19,8 @@ bot.on("message", (msg: Message) => {
   console.log(`[MESSAGE] ${from} -> ${msg.text}`);
 });
 
+// Register commands in menu
+registerBotMenu(bot);
 // Register all commands
 registerCommands(bot);
 
