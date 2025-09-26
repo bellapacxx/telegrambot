@@ -1,47 +1,53 @@
 import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import { getSession, resetSession, withSession, MySession } from "../middlewares/session";
 import { api } from "../services/api";
+import { mainMenuKeyboard } from "../keyboards/mainMenu"; // import your main menu
 
 export const withdrawCommand = (bot: TelegramBot) => {
-  // Handle inline button clicks
   bot.on("callback_query", (query: CallbackQuery) => {
     const chatId = query.message?.chat.id;
     if (!chatId || !query.data) return;
 
     const session = getSession(chatId);
 
-    // Withdraw from main menu
+    // Withdraw flow
     if (query.data === "withdraw") {
       session.state = "awaiting_amount";
       bot.sendMessage(chatId, "🏦 Please enter the amount to withdraw:", {
-        reply_markup: { inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]] },
+        reply_markup: {
+          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
+        },
       });
       bot.answerCallbackQuery(query.id);
       return;
     }
 
-    // Back button to main menu
+    // Back to main menu
     if (query.data === "back_main") {
       resetSession(chatId);
-      bot.sendMessage(chatId, "🏠 Returning to main menu", { reply_markup: { inline_keyboard: [] } });
+      bot.sendMessage(chatId, "🏠 Returning to main menu", {
+        reply_markup: mainMenuKeyboard(),
+      });
       bot.answerCallbackQuery(query.id);
       return;
     }
 
-    // Telebirr/CBE selection buttons
+    // Method selection (Telebirr/CBE)
     if (query.data === "method_telebirr" || query.data === "method_cbe") {
       session.tempData = { method: query.data === "method_telebirr" ? "Telebirr" : "CBE" };
       session.state = "awaiting_account";
 
       bot.sendMessage(chatId, `📄 Please enter your ${session.tempData.method} account number:`, {
-        reply_markup: { inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]] },
+        reply_markup: {
+          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
+        },
       });
       bot.answerCallbackQuery(query.id);
       return;
     }
   });
 
-  // Handle the step-by-step withdraw flow
+  // Handle step-by-step withdraw flow
   withSession(bot, async (msg: Message, session: MySession) => {
     if (!msg.text || !msg.chat) return;
     const chatId = msg.chat.id;
@@ -72,7 +78,6 @@ export const withdrawCommand = (bot: TelegramBot) => {
         session.tempData = { ...session.tempData, account: text };
 
         try {
-          // Call your backend withdraw API
           const response = await api.withdraw({
             telegramId: chatId,
             amount: session.amount,
@@ -82,16 +87,14 @@ export const withdrawCommand = (bot: TelegramBot) => {
 
           bot.sendMessage(
             chatId,
-            `✅ Your withdrawal request of ${response.data.amount} has been submitted successfully!\n}\n\n📌 Please wait up to 2 minutes for processing.If there is any delay, our admin @bpac12 will follow up`,
-            {
-              reply_markup: {
-                inline_keyboard: [[{ text: "🏠 Back to Main Menu", callback_data: "back_main" }]],
-              },
-            }
+            `✅ Your withdrawal request of ${response.data.amount} has been submitted successfully!\n\n📌 Please wait up to 2 minutes for processing. If there is any delay, our admin @bpac12 will follow up.`,
+            { reply_markup: mainMenuKeyboard() }
           );
         } catch (err: any) {
           console.error("Withdrawal API error:", err);
-          bot.sendMessage(chatId, "❌ Failed to submit your withdrawal. Please try again later.");
+          bot.sendMessage(chatId, "❌ Failed to submit your withdrawal. Please try again later.", {
+            reply_markup: mainMenuKeyboard(),
+          });
         }
 
         resetSession(chatId);

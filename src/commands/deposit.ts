@@ -1,6 +1,6 @@
 import TelegramBot, { CallbackQuery, Message } from "node-telegram-bot-api";
 import { api } from "../services/api";
-import { getSession, resetSession } from "../middlewares/session";
+import { getSession, MySession, resetSession } from "../middlewares/session";
 
 // -----------------------------
 // Helpers
@@ -63,7 +63,8 @@ ${depositMethods}`;
     parse_mode: "MarkdownV2",
     reply_markup: {
       inline_keyboard: [
-        [{ text: "💰 Telebirr → Telebirr", callback_data: "pay_telebirr" }],
+        [{ text: "💰 Telebirr ወደ Telebirr", callback_data: "pay_telebirr" }],
+        [{ text: "💰 CBE ወደs CBE", callback_data: "pay_cbe" }],
         [{ text: "⬅ Back", callback_data: "main_menu" }],
       ],
     },
@@ -96,7 +97,7 @@ async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: an
 
   // Footer (plain, escaped)
   const footer = escapeMarkdownV2(
-    `የሚያጋጥማቹ የክፍያ ችግር ካለ @Bbkkmmaa በዚ ኤጀንቱን ማዋራት ይችላሉ ወይም @beakal62 በዚ ሳፖርት ማዉራት ይችላሉ
+    `የሚያጋጥማቹ የክፍያ ችግር ካለ @Bpac12 በዚ ኤጀንቱን ማዋራት ይችላሉ ወይም @Zeeumii በዚ ሳፖርት ማዉራት ይችላሉ
 
 የከፈለችሁበትን አጭር የጹሁፍ መለክት (sms) እዚ ላይ ያስገቡት 👇👇👇`
   );
@@ -107,6 +108,44 @@ async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: an
   return bot.sendMessage(chatId, finalMessage, { parse_mode: "MarkdownV2" });
 }
 
+async function showCbePayment(bot: TelegramBot, chatId: number, session: any) {
+  const account = "1000450735934";
+
+   function escapeMarkdownV2(text: string) {
+    return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
+  }
+   // First code block (account)
+  const accountBlock = "```\n" + account + "\n```";
+
+  const instructions = `
+  1. ከላይ ባለው የኢትዮጵያ ንግድ ባንክ አካውንት 50ብር ያስገቡ
+
+2. የምትልኩት የገንዘብ መጠን እና እዚ ላይ እንዲሞላልዎ የምታስገቡት የብር መጠን ተመሳሳይ መሆኑን እርግጠኛ ይሁኑ
+
+3. ብሩን ስትልኩ የከፈላችሁበትን መረጃ የያዝ አጭር የጹሁፍ መልክት(sms) ከኢትዮጵያ ንግድ ባንክ ይደርሳችኋል
+
+4. የደረሳችሁን አጭር የጹሁፍ መለክት(sms) ሙሉዉን ኮፒ(copy) በማረግ ከታሽ ባለው የቴሌግራም የጹሁፍ ማስገቢአው ላይ ፔስት(paste) በማረግ ይላኩት 
+
+5. ብር ስትልኩ የምትጠቀሙት USSD(889) ከሆነ አንዳንዴ አጭር የጹሁፍ መለክት(sms) ላይገባላቹ ስለሚችል ከUSSD(889) ሂደት መጨረሻ ላይ Complete የሚለው ላይ ስደርሱ 3 ቁጥርን በመጫን የትራንዛክሽን ቁጥሩን ሲያሳያቹህ ትራንዛክሽን ቁጥሩን ጽፎ ማስቀመጥ ይኖርባችኋል 
+
+ማሳሰቢያ፡ 1. አጭር የጹሁፍ መለክት(sms) ካልደረሳቹ ያለትራንዛክሽን ቁጥር ሲስተሙ ዋሌት ስለማይሞላላቹ የከፈላችሁበትን ደረሰኝ ከባንክ በመቀበል በማንኛውም ሰአት ትራንዛክሽን ቁጥሩን ቦቱ ላይ ማስገባት ትችላላቹ 
+
+       2. ዲፖዚት ባረጋቹ ቁጥር ቦቱ የሚያገናኛቹ ኤጀንቶች ስለሚለያዩ ከላይ ወደሚሰጣቹ የኢትዮጵያ ንግድ ባንክ አካውንት ብቻ ብር መላካችሁን እርግጠኛ ይሁኑ። ዲፖዚት ስታረጉ ቦቱ ከሚያገናኛቹ ኤጀንት ዉጪ ወደ ሌላ ኤጀንት ብር ከላካቹ ቦቱ 2% ቆርጦ ይልክላችኋል 
+  `;
+
+  const instructionsBlock = "```\n" + escapeMarkdownV2(instructions) + "\n```";
+
+  const footer = escapeMarkdownV2(
+    `የሚያጋጥማቹ የክፍያ ችግር ካለ @Bpac12 በዚ ኤጀንቱን ማዋራት ይችላሉ ወይም @Zeeumii በዚ ሳፖርት ማዉራት ይችላሉ
+
+የከፈለችሁበትን አጭር የጹሁፍ መለክት (sms) እዚ ላይ ያስገቡት 👇👇👇`
+  );
+
+  const finalMessage = `${accountBlock}\n${instructionsBlock}\n${footer}`;
+   session.state = "awaiting_sms"; 
+  return bot.sendMessage(chatId, finalMessage, { parse_mode: "MarkdownV2" });
+
+}
 
 
 // -----------------------------
@@ -153,6 +192,13 @@ export function depositCommand(bot: TelegramBot) {
             await bot.sendMessage(chatId, "⚠ እባክዎ በመጀመሪያ መጠን ያስገቡ.");
           } else {
             await showTelebirrPayment(bot, chatId, session);
+          }
+          break;
+        case "pay_cbe":
+          if (session.state !== "deposit_ready") {
+            await bot.sendMessage(chatId, "⚠ እባክዎ በመጀመሪያ መጠን ያስገቡ.");
+          } else {
+            await showCbePayment(bot, chatId, session);
           }
           break;
       }
@@ -220,3 +266,4 @@ export function depositCommand(bot: TelegramBot) {
   });
 
 }
+
