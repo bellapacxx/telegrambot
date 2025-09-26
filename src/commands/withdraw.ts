@@ -1,5 +1,6 @@
 import TelegramBot, { Message, CallbackQuery } from "node-telegram-bot-api";
 import { getSession, resetSession, withSession, MySession } from "../middlewares/session";
+import { api } from "../services/api";
 
 export const withdrawCommand = (bot: TelegramBot) => {
   // Handle inline button clicks
@@ -13,9 +14,7 @@ export const withdrawCommand = (bot: TelegramBot) => {
     if (query.data === "withdraw") {
       session.state = "awaiting_amount";
       bot.sendMessage(chatId, "🏦 Please enter the amount to withdraw:", {
-        reply_markup: {
-          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
-        },
+        reply_markup: { inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]] },
       });
       bot.answerCallbackQuery(query.id);
       return;
@@ -24,9 +23,7 @@ export const withdrawCommand = (bot: TelegramBot) => {
     // Back button to main menu
     if (query.data === "back_main") {
       resetSession(chatId);
-      bot.sendMessage(chatId, "🏠 Returning to main menu", {
-        reply_markup: { inline_keyboard: [] }, // you can add main menu buttons here
-      });
+      bot.sendMessage(chatId, "🏠 Returning to main menu", { reply_markup: { inline_keyboard: [] } });
       bot.answerCallbackQuery(query.id);
       return;
     }
@@ -37,9 +34,7 @@ export const withdrawCommand = (bot: TelegramBot) => {
       session.state = "awaiting_account";
 
       bot.sendMessage(chatId, `📄 Please enter your ${session.tempData.method} account number:`, {
-        reply_markup: {
-          inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]],
-        },
+        reply_markup: { inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_main" }]] },
       });
       bot.answerCallbackQuery(query.id);
       return;
@@ -47,7 +42,7 @@ export const withdrawCommand = (bot: TelegramBot) => {
   });
 
   // Handle the step-by-step withdraw flow
-  withSession(bot, (msg: Message, session: MySession) => {
+  withSession(bot, async (msg: Message, session: MySession) => {
     if (!msg.text || !msg.chat) return;
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -62,7 +57,6 @@ export const withdrawCommand = (bot: TelegramBot) => {
         session.amount = amount;
         session.state = "awaiting_method";
 
-        // Show inline buttons for method selection with back button
         bot.sendMessage(chatId, "💳 Please choose a payment method:", {
           reply_markup: {
             inline_keyboard: [
@@ -77,21 +71,28 @@ export const withdrawCommand = (bot: TelegramBot) => {
       case "awaiting_account":
         session.tempData = { ...session.tempData, account: text };
 
-        const adminChatId = 7762372471;
-        bot.sendMessage(
-          adminChatId,
-          `💸 New withdrawal request:\nAmount: ${session.amount}\nMethod: ${session.tempData.method}\nAccount: ${session.tempData.account}`
-        );
+        try {
+          // Call your backend withdraw API
+          const response = await api.withdraw({
+            telegramId: chatId,
+            amount: session.amount,
+            method: session.tempData.method,
+            account: session.tempData.account,
+          });
 
-        bot.sendMessage(
-          chatId,
-          "✅ Your withdrawal request has been submitted!\n\n📌 Please wait up to 2 minutes for processing. If there is any delay, our admin @bpac12 will follow up.",
-          {
-            reply_markup: {
-              inline_keyboard: [[{ text: "🏠 Back to Main Menu", callback_data: "back_main" }]],
-            },
-          }
-        );
+          bot.sendMessage(
+            chatId,
+            `✅ Your withdrawal request of ${response.data.amount} has been submitted successfully!\n}\n\n📌 Please wait up to 2 minutes for processing.If there is any delay, our admin @bpac12 will follow up`,
+            {
+              reply_markup: {
+                inline_keyboard: [[{ text: "🏠 Back to Main Menu", callback_data: "back_main" }]],
+              },
+            }
+          );
+        } catch (err: any) {
+          console.error("Withdrawal API error:", err);
+          bot.sendMessage(chatId, "❌ Failed to submit your withdrawal. Please try again later.");
+        }
 
         resetSession(chatId);
         break;

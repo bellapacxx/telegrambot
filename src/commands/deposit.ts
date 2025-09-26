@@ -71,7 +71,7 @@ ${depositMethods}`;
 }
 
 async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: any) {
-  const account = "0952264228";
+  const account = "0924381551";
 
   function escapeMarkdownV2(text: string) {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
