@@ -13,7 +13,10 @@ export const startCommand = (bot: TelegramBot) => {
     const username = msg.from?.username || msg.from?.first_name || "Player";
 
     if (!telegramId) {
-      return bot.sendMessage(chatId, "❌ Cannot identify you. Please try again.");
+      return bot.sendMessage(
+        chatId,
+        "❌ Cannot identify you. Please try again."
+      );
     }
 
     const session = getSession(chatId);
@@ -23,24 +26,33 @@ export const startCommand = (bot: TelegramBot) => {
 
       if (!exists) {
         session.state = "awaiting_phone";
-        return bot.sendMessage(chatId, "📱 Please share your phone number to complete registration.", {
-          reply_markup: {
-            keyboard: [[{ text: "📲 Share Phone Number", request_contact: true }]],
-            resize_keyboard: true,
-            one_time_keyboard: true,
-          },
-        });
+        return bot.sendMessage(
+          chatId,
+          "📱 Please share your phone number to complete registration.",
+          {
+            reply_markup: {
+              keyboard: [
+                [{ text: "📲 Share Phone Number", request_contact: true }],
+              ],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            },
+          }
+        );
       }
 
       // User exists, reset session and show menu
-     delete session.state;
+      delete session.state;
       return bot.sendMessage(chatId, `👋 Welcome back, *${username}*!`, {
         parse_mode: "Markdown",
         reply_markup: mainMenuKeyboard(),
       });
     } catch (err) {
       console.error("❌ Error checking user:", err);
-      return bot.sendMessage(chatId, "⚠️ Registration check failed. Please try again later.");
+      return bot.sendMessage(
+        chatId,
+        "⚠️ Registration check failed. Please try again later."
+      );
     }
   });
 
@@ -54,7 +66,10 @@ export const startCommand = (bot: TelegramBot) => {
     const phone = msg.contact?.phone_number;
 
     if (!telegramId || !phone) {
-      return bot.sendMessage(chatId, "❌ Could not get your phone number. Please try again.");
+      return bot.sendMessage(
+        chatId,
+        "❌ Could not get your phone number. Please try again."
+      );
     }
 
     const session = getSession(chatId);
@@ -70,7 +85,7 @@ export const startCommand = (bot: TelegramBot) => {
       if (!userExists) {
         await api.registerUser({
           telegram_id: telegramId,
-          username,
+          name: username,
           phone,
         });
       } else {
@@ -79,13 +94,20 @@ export const startCommand = (bot: TelegramBot) => {
 
       delete session.state; // clear state
 
-      await bot.sendMessage(chatId, `✅ Registration complete!\n👋 Welcome, *${username}*!`, {
-        parse_mode: "Markdown",
-        reply_markup: mainMenuKeyboard(),
-      });
+      await bot.sendMessage(
+        chatId,
+        `✅ Registration complete!\n👋 Welcome, *${username}*!`,
+        {
+          parse_mode: "Markdown",
+          reply_markup: mainMenuKeyboard(),
+        }
+      );
     } catch (err) {
       console.error("❌ Registration error:", err);
-      await bot.sendMessage(chatId, "⚠️ Failed to register. Please try again later.");
+      await bot.sendMessage(
+        chatId,
+        "⚠️ Failed to register. Please try again later."
+      );
     }
   });
 };
