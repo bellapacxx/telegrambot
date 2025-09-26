@@ -17,7 +17,12 @@ function showDepositMenu(bot: TelegramBot, chatId: number) {
   });
 }
 
-async function showPaymentDetails(bot: TelegramBot, chatId: number, session: any, msg: Message) {
+async function showPaymentDetails(
+  bot: TelegramBot,
+  chatId: number,
+  session: any,
+  msg: Message
+) {
   let phone = "Not shared";
   try {
     const dbUser = await api.getUser(msg.from!.id);
@@ -71,7 +76,11 @@ ${depositMethods}`;
   });
 }
 
-async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: any) {
+async function showTelebirrPayment(
+  bot: TelegramBot,
+  chatId: number,
+  session: any
+) {
   const account = "0924381551";
 
   function escapeMarkdownV2(text: string) {
@@ -104,21 +113,22 @@ async function showTelebirrPayment(bot: TelegramBot, chatId: number, session: an
 
   // Final message combined
   const finalMessage = `${accountBlock}\n${instructionsBlock}\n${footer}`;
-   session.state = "awaiting_sms"; 
+  session.state = "awaiting_sms";
   return bot.sendMessage(chatId, finalMessage, { parse_mode: "MarkdownV2" });
 }
 
 async function showCbePayment(bot: TelegramBot, chatId: number, session: any) {
   const account = "1000450735934";
 
-   function escapeMarkdownV2(text: string) {
+  function escapeMarkdownV2(text: string) {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
   }
-   // First code block (account)
+  const amount = escapeMarkdownV2(String(session.amount));
+  // First code block (account)
   const accountBlock = "```\n" + account + "\n```";
 
   const instructions = `
-  1. ከላይ ባለው የኢትዮጵያ ንግድ ባንክ አካውንት 50ብር ያስገቡ
+  1. ከላይ ባለው የኢትዮጵያ ንግድ ባንክ አካውንት ${amount}ብር ያስገቡ
 
 2. የምትልኩት የገንዘብ መጠን እና እዚ ላይ እንዲሞላልዎ የምታስገቡት የብር መጠን ተመሳሳይ መሆኑን እርግጠኛ ይሁኑ
 
@@ -142,11 +152,9 @@ async function showCbePayment(bot: TelegramBot, chatId: number, session: any) {
   );
 
   const finalMessage = `${accountBlock}\n${instructionsBlock}\n${footer}`;
-   session.state = "awaiting_sms"; 
+  session.state = "awaiting_sms";
   return bot.sendMessage(chatId, finalMessage, { parse_mode: "MarkdownV2" });
-
 }
-
 
 // -----------------------------
 // Deposit Command
@@ -206,11 +214,12 @@ export function depositCommand(bot: TelegramBot) {
       await bot.answerCallbackQuery(query.id);
     } catch (err) {
       console.error("[DEPOSIT CALLBACK ERROR]", err);
-      if (query.id) await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
+      if (query.id)
+        await bot.answerCallbackQuery(query.id, { text: "❌ Error" });
     }
   });
 
-   bot.on("message", async (msg: Message) => {
+  bot.on("message", async (msg: Message) => {
     if (!msg.from?.id || !msg.chat.id || !msg.text) return;
 
     const chatId = msg.chat.id;
@@ -219,7 +228,11 @@ export function depositCommand(bot: TelegramBot) {
 
     // Step 1: Deposit amount
     if (session.state === "awaiting_deposit_amount") {
-      console.log("[DEBUG] Deposit amount input received:", { text, chatId, userId: msg.from.id });
+      console.log("[DEBUG] Deposit amount input received:", {
+        text,
+        chatId,
+        userId: msg.from.id,
+      });
 
       const amount = parseFloat(text);
       if (isNaN(amount) || amount <= 0) {
@@ -227,8 +240,13 @@ export function depositCommand(bot: TelegramBot) {
       }
 
       session.amount = amount;
-      session.name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") || "User";
-      session.reference = Math.random().toString(36).substring(2, 10).toUpperCase();
+      session.name =
+        [msg.from.first_name, msg.from.last_name].filter(Boolean).join(" ") ||
+        "User";
+      session.reference = Math.random()
+        .toString(36)
+        .substring(2, 10)
+        .toUpperCase();
       session.state = "deposit_ready";
 
       return showPaymentDetails(bot, chatId, session, msg);
@@ -242,8 +260,8 @@ export function depositCommand(bot: TelegramBot) {
         const response = await api.verifyDeposit({
           userId: msg.from.id,
           sms: text,
-           expectedAmount: session.amount ?? 0,        // fallback to 0
-  reference: session.reference ?? "",         // fallback to empty string
+          expectedAmount: session.amount ?? 0, // fallback to 0
+          reference: session.reference ?? "", // fallback to empty string
         });
 
         if (response.success) {
@@ -264,6 +282,4 @@ export function depositCommand(bot: TelegramBot) {
       }
     }
   });
-
 }
-
