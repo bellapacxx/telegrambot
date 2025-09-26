@@ -85,7 +85,7 @@ export const startCommand = (bot: TelegramBot) => {
       if (!userExists) {
         await api.registerUser({
           telegram_id: telegramId,
-          name,
+          username: name,
           phone,
         });
       } else {
