@@ -1,7 +1,7 @@
 import TelegramBot, { Message } from "node-telegram-bot-api";
 
 export interface MySession {
-  reference?: string;   // ✅ make optional
+  reference?: string; // ✅ make optional
   state?: string;
   tempData?: any;
 

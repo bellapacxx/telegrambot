@@ -10,7 +10,7 @@ export const startCommand = (bot: TelegramBot) => {
   bot.onText(/^\/start$/, async (msg: Message) => {
     const chatId = msg.chat.id;
     const telegramId = msg.from?.id;
-    const username = msg.from?.username || msg.from?.first_name || "Player";
+    const name = msg.from?.username || msg.from?.first_name || "Player";
 
     if (!telegramId) {
       return bot.sendMessage(
@@ -43,7 +43,7 @@ export const startCommand = (bot: TelegramBot) => {
 
       // User exists, reset session and show menu
       delete session.state;
-      return bot.sendMessage(chatId, `👋 Welcome back, *${username}*!`, {
+      return bot.sendMessage(chatId, `👋 Welcome back, *${name}*!`, {
         parse_mode: "Markdown",
         reply_markup: mainMenuKeyboard(),
       });
@@ -62,7 +62,7 @@ export const startCommand = (bot: TelegramBot) => {
   bot.on("contact", async (msg: Message) => {
     const chatId = msg.chat.id;
     const telegramId = msg.from?.id;
-    const username = msg.from?.username || msg.from?.first_name || "Player";
+    const name = msg.from?.username || msg.from?.first_name || "Player";
     const phone = msg.contact?.phone_number;
 
     if (!telegramId || !phone) {
@@ -85,7 +85,7 @@ export const startCommand = (bot: TelegramBot) => {
       if (!userExists) {
         await api.registerUser({
           telegram_id: telegramId,
-          name: username,
+          name: name,
           phone,
         });
       } else {
@@ -96,7 +96,7 @@ export const startCommand = (bot: TelegramBot) => {
 
       await bot.sendMessage(
         chatId,
-        `✅ Registration complete!\n👋 Welcome, *${username}*!`,
+        `✅ Registration complete!\n👋 Welcome, *${name}*!`,
         {
           parse_mode: "Markdown",
           reply_markup: mainMenuKeyboard(),
