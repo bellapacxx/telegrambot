@@ -75,7 +75,7 @@ export const startCommand = (bot: TelegramBot) => {
     const session = getSession(chatId);
 
     if (session.state !== "awaiting_phone") {
-      // Ignore random contact messages
+      // Ignore random contact messages 
       return;
     }
 
