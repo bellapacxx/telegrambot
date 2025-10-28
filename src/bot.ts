@@ -17,7 +17,7 @@ let bot: TelegramBot;
 if (NODE_ENV === "production" && WEBHOOK_URL) {
   bot = new TelegramBot(BOT_TOKEN, { webHook: true });
 
-  const webhookEndpoint = `${WEBHOOK_URL}/${BOT_TOKEN}`;
+  const webhookEndpoint = `${WEBHOOK_URL}/webhook`;
 
   bot
     .setWebHook(webhookEndpoint, {
@@ -29,9 +29,6 @@ if (NODE_ENV === "production" && WEBHOOK_URL) {
       console.log("🔗 Current webhook info:", info);
     })
     .catch((err) => console.error("❌ Failed to set webhook:", err));
-} else {
-  bot = new TelegramBot(BOT_TOKEN, { polling: true });
-  console.log("🚀 Bot running in polling mode (local dev)");
 }
 
 // 🧠 Simple in-memory session store
