@@ -1,9 +1,15 @@
 import axios from "axios";
 import WebSocket from "ws"; // Node WebSocket library
 
-const API_BASE = process.env.BACKEND_URL || "https://bingo-backend-production-32e1.up.railway.app/api";
-const WS_BASE = process.env.BACKEND_WS || "wss://bingo-backend-production-32e1.up.railway.app/ws";
-const verify_BASE = process.env.VERIFY_URL || "https://smsverifierapi-production.up.railway.app/api/verify-deposit"
+const API_BASE =
+  process.env.BACKEND_URL ||
+  "https://bingo-backend-bellapacxx8978-53wsay5o.leapcell.dev/api";
+const WS_BASE =
+  process.env.BACKEND_WS ||
+  "wss://https://bingo-backend-bellapacxx8978-53wsay5o.leapcell.dev/ws";
+const verify_BASE =
+  process.env.VERIFY_URL ||
+  "https://smsverifierapi.onrender.com/api/verify-deposit";
 export const api = {
   // ----------------------
   // User APIs
@@ -18,13 +24,19 @@ export const api = {
     }
   },
 
-  async registerUser(user: { telegram_id: number; username: string; phone: string }) {
+  async registerUser(user: {
+    telegram_id: number;
+    username: string;
+    phone: string;
+  }) {
     const res = await axios.post(`${API_BASE}/users`, user);
     return res.data;
   },
 
   async updatePhone(telegramId: number, phone: string) {
-    const res = await axios.put(`${API_BASE}/users/${telegramId}/phone`, { phone });
+    const res = await axios.put(`${API_BASE}/users/${telegramId}/phone`, {
+      phone,
+    });
     return res.data;
   },
 
@@ -37,41 +49,48 @@ export const api = {
       throw err;
     }
   },
-   async verifyDeposit(data: {
-  userId: number;
-  sms: string;
-  expectedAmount: number;
-  reference: string;
-}) {
-  try {
-    // Step 1: Call the SMS verifier API
-    const verifyRes = await axios.post(verify_BASE, { body: data.sms });
+  async verifyDeposit(data: {
+    userId: number;
+    sms: string;
+    expectedAmount: number;
+    reference: string;
+  }) {
+    try {
+      // Step 1: Call the SMS verifier API
+      const verifyRes = await axios.post(verify_BASE, { body: data.sms });
 
-    if (verifyRes.data.status !== "success") {
-      // Verification failed
-      return { success: false, message: verifyRes.data.message || "Verification failed" };
+      if (verifyRes.data.status !== "success") {
+        // Verification failed
+        return {
+          success: false,
+          message: verifyRes.data.message || "Verification failed",
+        };
+      }
+      console.log("shagjdjag");
+      // Step 2: Update balance in your backend
+      const updateRes = await axios.post(
+        `${API_BASE}/deposit/verify`,
+        {
+          userId: data.userId,
+          expectedAmount: data.expectedAmount, // must match backend struct
+          reference: data.reference,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return {
+        success: true,
+        amount: data.expectedAmount,
+        data: updateRes.data,
+      };
+    } catch (err: any) {
+      return { success: false, message: err.message || "Unknown error" };
     }
-    console.log("shagjdjag")
-    // Step 2: Update balance in your backend
-    const updateRes = await axios.post(
-  `${API_BASE}/deposit/verify`,
-  {
-    userId: data.userId,
-    expectedAmount: data.expectedAmount, // must match backend struct
-    reference: data.reference,
   },
-  {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  }
-);
-
-    return { success: true,amount : data.expectedAmount  ,data: updateRes.data };
-  } catch (err: any) {
-    return { success: false, message: err.message || "Unknown error" };
-  }
-},
 
   deposit: async (data: any) => axios.post(`${API_BASE}/deposit`, data),
   withdraw: async (data: any) => axios.post(`${API_BASE}/withdraw`, data),
@@ -85,11 +104,15 @@ export const api = {
     const ws = new WebSocket(wsUrl);
 
     ws.on("open", () => {
-      console.log(`[WS] Connected to lobby for stake ${stake}, user ${telegramId}`);
+      console.log(
+        `[WS] Connected to lobby for stake ${stake}, user ${telegramId}`
+      );
     });
 
-    ws.on("message", (msg: { toString: () => any; }) => {
-      console.log(`[WS] Lobby message for user ${telegramId}: ${msg.toString()}`);
+    ws.on("message", (msg: { toString: () => any }) => {
+      console.log(
+        `[WS] Lobby message for user ${telegramId}: ${msg.toString()}`
+      );
     });
 
     ws.on("close", () => {
