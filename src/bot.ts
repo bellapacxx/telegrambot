@@ -2,13 +2,30 @@ import TelegramBot, { Message } from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import { registerCommands } from "./commands";
 import { registerBotMenu } from "./utils/menu";
+
 dotenv.config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEBHOOK_URL = process.env.WEBHOOK_URL; // e.g., "https://your-app.onrender.com/webhook"
+const NODE_ENV = process.env.NODE_ENV || "development";
+
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN is required in .env");
 
-// Create bot instance with polling
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+let bot: TelegramBot;
+
+// 🧠 Hybrid mode — webhook in production, polling locally
+if (NODE_ENV === "production" && WEBHOOK_URL) {
+  bot = new TelegramBot(BOT_TOKEN, { webHook: true });
+
+  const webhookEndpoint = `${WEBHOOK_URL}/${BOT_TOKEN}`;
+  bot
+    .setWebHook(webhookEndpoint)
+    .then(() => console.log(`✅ Webhook set to: ${webhookEndpoint}`))
+    .catch((err) => console.error("❌ Failed to set webhook:", err));
+} else {
+  bot = new TelegramBot(BOT_TOKEN, { polling: true });
+  console.log("🚀 Bot running in polling mode (local dev)");
+}
 
 // Simple session store
 const userData: Record<number, any> = {};
@@ -19,30 +36,14 @@ bot.on("message", (msg: Message) => {
   console.log(`[MESSAGE] ${from} -> ${msg.text}`);
 });
 
-// Register commands in menu
+// Register commands and menu
 registerBotMenu(bot);
-// Register all commands
 registerCommands(bot);
 
-// Global error handling
-bot.on("polling_error", (err) => {
-  console.error("Polling error:", err);
-});
+// Error handling
+bot.on("polling_error", (err) => console.error("Polling error:", err));
+bot.on("webhook_error", (err) => console.error("Webhook error:", err));
 
-bot.on("webhook_error", (err) => {
-  console.error("Webhook error:", err);
-});
-
-console.log("🚀 Bot started");
-
-// Graceful shutdown
-const shutdown = (signal: string) => {
-  console.log(`Stopping bot (${signal})...`);
-  bot.stopPolling();
-  process.exit(0);
-};
-
-process.once("SIGINT", () => shutdown("SIGINT"));
-process.once("SIGTERM", () => shutdown("SIGTERM"));
+console.log("✅ Bot initialized");
 
 export { bot, userData };
