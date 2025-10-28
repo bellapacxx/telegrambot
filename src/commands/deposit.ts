@@ -81,7 +81,7 @@ async function showTelebirrPayment(
   chatId: number,
   session: any
 ) {
-  const account = "0994027828";
+  const account = "0924381551";
 
   function escapeMarkdownV2(text: string) {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
@@ -106,7 +106,7 @@ async function showTelebirrPayment(
 
   // Footer (plain, escaped)
   const footer = escapeMarkdownV2(
-    `የሚያጋጥማቹ የክፍያ ችግር ካለ @Bpac12 በዚ ኤጀንቱን ማዋራት ይችላሉ ወይም @Zeeumii በዚ ሳፖርት ማዉራት ይችላሉ
+    `የሚያጋጥማቹ የክፍያ ችግር ካለ @miko09245 በዚ ኤጀንቱን ማዋራት ይችላሉ
 
 የከፈለችሁበትን አጭር የጹሁፍ መለክት (sms) እዚ ላይ ያስገቡት 👇👇👇`
   );
@@ -118,7 +118,7 @@ async function showTelebirrPayment(
 }
 
 async function showCbePayment(bot: TelegramBot, chatId: number, session: any) {
-  const account = "1000415706708";
+  const account = "1000496442699";
 
   function escapeMarkdownV2(text: string) {
     return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, "\\$1");
@@ -146,7 +146,7 @@ async function showCbePayment(bot: TelegramBot, chatId: number, session: any) {
   const instructionsBlock = "```\n" + escapeMarkdownV2(instructions) + "\n```";
 
   const footer = escapeMarkdownV2(
-    `የሚያጋጥማቹ የክፍያ ችግር ካለ @Bpac12 በዚ ኤጀንቱን ማዋራት ይችላሉ ወይም @Zeeumii በዚ ሳፖርት ማዉራት ይችላሉ
+    `የሚያጋጥማቹ የክፍያ ችግር ካለ @miko09245 በዚ ኤጀንቱን ማዋራት ይችላሉ
 
 የከፈለችሁበትን አጭር የጹሁፍ መለክት (sms) እዚ ላይ ያስገቡት 👇👇👇`
   );
